@@ -9,7 +9,7 @@ setup(
     description="LSTM for predictive maintenance",
     author="Yanina Kutovaya",
     author_email="kutovaiayp@yandex.ru",
-    url="https://github.com/Yanina-Kutovaya/predictive-maintenance.git",
+    url="https://github.com/YaninaK/predictive-maintenance.git",
     package_dir={"": "src"},
     packages=find_packages(where="src"),
 )
