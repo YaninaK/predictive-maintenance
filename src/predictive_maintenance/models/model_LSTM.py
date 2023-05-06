@@ -67,8 +67,8 @@ def get_model_LSTM(
         encoder_inputs, [decoder_outputs2, classifier_outputs], name="lstm_model"
     )
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(),
-        loss=tf.keras.losses.CategoricalCrossentropy(),
+        optimizer=tf.keras.optimizers.Adam(), 
+        loss=tf.keras.losses.CategoricalCrossentropy()
     )
 
     return model
