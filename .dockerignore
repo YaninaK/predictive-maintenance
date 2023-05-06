@@ -1,0 +1,16 @@
+/notebooks
+/reports
+/tests
+/include
+/docs
+*.md
+.git
+.gitignore
+.venv/
+requirements_Colab.txt
+
+**/.*
+docker-compose.dev.yml
+docker-compose.prod.yml
+docker/predictive_maintenance_train
+scripts/inference_demo.py

@@ -59,16 +59,17 @@ def get_model_LSTM(
     )(decoder_l2)
 
     flatten_outputs = tf.keras.layers.Flatten(name="flatten")(decoder_outputs2)
+    dropout = tf.keras.layers.Dropout(0.2, name="dropout")(flatten_outputs)
     classifier_outputs = tf.keras.layers.Dense(
         n_output_units, activation="softmax", name="clf"
-    )(flatten_outputs)
+    )(dropout)
 
     model = tf.keras.models.Model(
         encoder_inputs, [decoder_outputs2, classifier_outputs], name="lstm_model"
     )
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(), 
-        loss=tf.keras.losses.CategoricalCrossentropy()
+        optimizer=tf.keras.optimizers.Adam(),
+        loss=tf.keras.losses.CategoricalCrossentropy(),
     )
 
     return model
