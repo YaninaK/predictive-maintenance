@@ -1,8 +1,10 @@
 import logging
 import pandas as pd
 import pyspark
+import re
 from functools import reduce
 from typing import Optional
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,24 +16,6 @@ X_TRAIN_PATH = PATH + "X_train.parquet"
 Y_TRAIN_PATH = PATH + "y_train.parquet"
 MESSAGES_PATH = PATH + "messages.xlsx"
 
-COLUMN_NAMES = [
-    "rotor_current_1",
-    "rotor_current_2",
-    "stator_current",
-    "oil_pressure_in_the_system",
-    "bearing_temperature_on_support_1",
-    "bearing_temperature_on_support_2",
-    "bearing_temperature_on_support_3",
-    "bearing_temperature_on_support_4",
-    "oil_temperature_in_the_system",
-    "oil_temperature_in_oil_block",
-    "vibration_on_support_1",
-    "vibration_on_support_2",
-    "vibration_on_support_3",
-    "vibration_on_support_3_longitudinal",
-    "vibration_on_support_4",
-    "vibration_on_support_4_longitudinal",
-]
 
 app_name = "data_preprocessing"
 spark_ui_port = 4041
@@ -64,74 +48,14 @@ def load_data(
     messages = pd.read_excel(messages_path, index_col=0)
 
     unified_tech_places = get_y_unified_tech_places(y_train)
+    messages = add_unified_names_to_messages(messages, unified_tech_places)
 
     X_cols = get_new_X_column_names()
     X_train = rename_columns(X_train, X_cols)
     y_cols = get_new_y_column_names(y_train)
-    y_train = rename_columns(y_train, y_cols)
-
-    unified_tech_places["new_name"] = y_cols[1:]
+    y_train = rename_columns(y_train, y_cols)    
 
     return X_train, y_train, messages, unified_tech_places
-
-
-def get_new_X_column_names(
-    column_names: [list] = None,
-) -> list:
-    """
-    Generates unified column names in latin transcription.
-    """
-    if column_names is None:
-        column_names = COLUMN_NAMES
-
-    new_names = ["dt"]
-    for i in range(4, 10):
-        name_list = [f"e{i}_" + name for name in column_names]
-        new_names += name_list
-
-    return new_names
-
-
-def rename_columns(df, new_colums: str):
-    """
-    Renames columns of pyspark DataFrame.
-    """
-    old_columns = df.schema.names
-
-    return reduce(
-        lambda data, idx: data.withColumnRenamed(old_columns[idx], new_colums[idx]),
-        range(len(old_columns)),
-        df,
-    )
-
-
-def get_new_y_column_names(y_train) -> list:
-    """
-    Generates new y_column_names.
-    """
-    desc = [i.split("_")[2] for i in y_train.schema.names[1:]]
-    y_cols = ["dt"] + [switch_to_latin_letters(col) for col in desc]
-
-    return y_cols
-
-
-def switch_to_latin_letters(string_in_cirill_transcription: str) -> str:
-    """
-    Transforms string in cirill transcription into latin transcription.
-    """
-
-    string_in_latin_transcription = (
-        str(string_in_cirill_transcription)
-        .translate(
-            str.maketrans(
-                "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ .№",
-                "abvgdeejzijklmnoprstufhzcss_y_euaABVGDEEJZIJKLMNOPRSTUFHZCSS_Y_EUA__N",
-            )
-        )
-        .lower()
-    )
-
-    return string_in_latin_transcription
 
 
 def get_y_unified_tech_places(y_train) -> pd.DataFrame:
@@ -163,3 +87,67 @@ def get_y_unified_tech_places(y_train) -> pd.DataFrame:
                 df.loc[i, "unified_name"] = name[:-1]
 
     return df
+
+
+def add_unified_names_to_messages(messages, unified_tech_places) -> pd.DataFrame:
+    """
+    Adds unified technical place names and equipment references to messages.
+    """
+    desc = unified_tech_places['description'].tolist()
+    unified_desc = unified_tech_places['unified_name'].tolist()
+    dict_ = {desc[i]: unified_desc[i] for i in range(len(unified_desc))}
+
+    for i in messages.index:  
+      original_name = messages.loc[i, 'НАЗВАНИЕ_ТЕХ_МЕСТА']
+      messages.loc[i, 'equipment'] = messages.loc[i, 'ИМЯ_МАШИНЫ'][-1]
+      messages.loc[i, 'unified_name'] = dict_[original_name]
+
+    return messages
+
+
+def get_new_X_column_names(X_test) -> list:
+    """
+    Generates unified column names.
+    """
+    cols = X_test.schema.names
+    new_cols = [cols[0]]
+    for col in cols[1:]:
+        col = re.sub("\.", "", col[11:])
+        col = re.sub("ТОК РОТОРА2", "ТОК РОТОРА 2", col)   
+        new_cols.append(col)
+
+    return new_cols
+
+
+def get_new_y_column_names(y_train) -> list:
+    """
+    Generates new y_column_names.
+    """
+    cols = y_train.schema.names
+    new_cols = [cols[0]]
+    for col in cols[1:]:
+        col = re.sub("\(", "", col[18:])
+        col = re.sub("\)", "", col)
+        col = re.sub("\.", "_", col)  
+        new_cols.append(col)
+
+    return y_cols
+
+
+def rename_columns(df, new_colums: str):
+    """
+    Renames columns of pyspark DataFrame.
+    """
+    old_columns = df.schema.names
+
+    return reduce(
+        lambda data, idx: data.withColumnRenamed(old_columns[idx], new_colums[idx]),
+        range(len(old_columns)),
+        df,
+    )
+
+
+
+
+
+
