@@ -70,7 +70,7 @@ def load_data(
     y_cols = get_new_y_column_names(y_train)
     y_train = rename_columns(y_train, y_cols)
 
-    unified_tech_places["new_names"] = y_cols
+    unified_tech_places["new_names"] = y_cols[1:]
 
     return X_train, y_train, messages, unified_tech_places
 
