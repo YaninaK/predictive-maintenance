@@ -32,17 +32,16 @@ COLUMN_NAMES = [
     "vibration_on_support_4_longitudinal",
 ]
 
-app_name = 'data_preprocessing'
+app_name = "data_preprocessing"
 spark_ui_port = 4041
 
 spark = (
-    pyspark.sql.SparkSession.builder
-        .appName(app_name)
-        .master("local[4]")
-        .config("spark.executor.memory", "15g")
-        .config("spark.driver.memory", "15g")
-        .config("spark.ui.port", spark_ui_port)
-        .getOrCreate()
+    pyspark.sql.SparkSession.builder.appName(app_name)
+    .master("local[4]")
+    .config("spark.executor.memory", "15g")
+    .config("spark.driver.memory", "15g")
+    .config("spark.ui.port", spark_ui_port)
+    .getOrCreate()
 )
 
 
@@ -51,7 +50,7 @@ def load_data(
     X_train_path: Optional[str] = None,
     y_train_path: Optional[str] = None,
     messages_path: Optional[str] = None,
-):    
+):
     if X_train_path is None:
         X_train_path = path + X_TRAIN_PATH
     if y_train_path is None:
@@ -59,9 +58,9 @@ def load_data(
     if messages_path is None:
         messages_path = path + MESSAGES_PATH
 
-    X_train = spark.read.parquet(X_train_path, header=True, inferSchema= True)
-    y_train = spark.read.parquet(y_train_path, header=True, inferSchema= True)  
-    messages = pd.read_excel(messages_path, index_col=0) 
+    X_train = spark.read.parquet(X_train_path, header=True, inferSchema=True)
+    y_train = spark.read.parquet(y_train_path, header=True, inferSchema=True)
+    messages = pd.read_excel(messages_path, index_col=0)
 
     unified_tech_places = get_y_unified_tech_places(y_train)
 
@@ -70,7 +69,7 @@ def load_data(
     y_cols = get_new_y_column_names()
     y_train = rename_columns(y_train, y_cols)
 
-    unified_tech_places['new_names'] = y_cols 
+    unified_tech_places["new_names"] = y_cols
 
     return X_train, y_train, messages, unified_tech_places
 
@@ -109,10 +108,11 @@ def get_new_y_column_names(y_train) -> list:
     """
     Generates new y_column_names.
     """
-    desc = [i.split('_')[2] for i in y_train.schema.names[1:]]
-    y_cols = ['dt'] + [switch_to_latin_letters(col) for col in desc]
+    desc = [i.split("_")[2] for i in y_train.schema.names[1:]]
+    y_cols = ["dt"] + [switch_to_latin_letters(col) for col in desc]
 
     return y_cols
+
 
 def switch_to_latin_letters(string_in_cirill_transcription: str) -> str:
     """
@@ -135,30 +135,30 @@ def switch_to_latin_letters(string_in_cirill_transcription: str) -> str:
 
 def get_y_unified_tech_places(y_train) -> pd.DataFrame:
     tech_places = y_train.schema.names[1:]
-    eq = [i.split('_')[1][-1] for i in tech_places]
-    desc = [i.split('_')[2] for i in tech_places]
+    eq = [i.split("_")[1][-1] for i in tech_places]
+    desc = [i.split("_")[2] for i in tech_places]
 
-    df = pd.DataFrame(zip(eq, desc), columns=['equipment', 'description'])
-    for i, name in enumerate(desc):  
-        for j in range(4, 10):   
+    df = pd.DataFrame(zip(eq, desc), columns=["equipment", "description"])
+    for i, name in enumerate(desc):
+        for j in range(4, 10):
             if (name[7] == str(j)) & (name[-1] == str(j)):
-                df.loc[i, 'unified_name'] = name[:7] + name[8:-1]
+                df.loc[i, "unified_name"] = name[:7] + name[8:-1]
             elif name[-5] == str(j):
-                df.loc[i, 'unified_name'] = name[:-5] + name[-4:]    
-            elif name[:6] == 'САПФИР':
-                df.loc[i, 'unified_name'] = name
-            elif name[:19] == 'ПОДШИПНИК ОПОРНЫЙ №':
-                df.loc[i, 'unified_name'] = name[:20]
-            elif name[:-1] in [        
-                'ТСМТ-101-010-50М-400 ТЕРМОПР.ПОДШ.Т.',
-                'ТСМТ-101-010-50М-200 ТЕРМОПР.ПОДШ.Т.',
-                'ТСМТ-101-010-50М-80 ТЕРМОПРЕОБР.МАСЛ',
-                'ТИРИСТОРНЫЙ ВОЗБУДИТЕЛЬ СПВД-М10-400-',
-                ]:
-                df.loc[i, 'unified_name'] = name
-            elif name[:18] == 'МАСЛОПРОВОДЫ ЭКСГ ':
-                df.loc[i, 'unified_name'] = 'МАСЛОПРОВОДЫ ЭКСГАУСТЕРА №'
+                df.loc[i, "unified_name"] = name[:-5] + name[-4:]
+            elif name[:6] == "САПФИР":
+                df.loc[i, "unified_name"] = name
+            elif name[:19] == "ПОДШИПНИК ОПОРНЫЙ №":
+                df.loc[i, "unified_name"] = name[:20]
+            elif name[:-1] in [
+                "ТСМТ-101-010-50М-400 ТЕРМОПР.ПОДШ.Т.",
+                "ТСМТ-101-010-50М-200 ТЕРМОПР.ПОДШ.Т.",
+                "ТСМТ-101-010-50М-80 ТЕРМОПРЕОБР.МАСЛ",
+                "ТИРИСТОРНЫЙ ВОЗБУДИТЕЛЬ СПВД-М10-400-",
+            ]:
+                df.loc[i, "unified_name"] = name
+            elif name[:18] == "МАСЛОПРОВОДЫ ЭКСГ ":
+                df.loc[i, "unified_name"] = "МАСЛОПРОВОДЫ ЭКСГАУСТЕРА №"
             elif name[-1] == str(j):
-                df.loc[i, 'unified_name'] = name[:-1]
-        
+                df.loc[i, "unified_name"] = name[:-1]
+
     return df
