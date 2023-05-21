@@ -82,7 +82,7 @@ def get_unified_tech_places(y_train) -> pd.DataFrame:
                 df.loc[i, "unified_name"] = name
             elif name[:18] == "МАСЛОПРОВОДЫ ЭКСГ ":
                 df.loc[i, "unified_name"] = "МАСЛОПРОВОДЫ ЭКСГАУСТЕРА №"
-            elif name[:18] == "ЭЛЕКТРООБОРУДОВАНИЯ ЭКСГ ":
+            elif name[:24] == "ЭЛЕКТРООБОРУДОВАНИЯ ЭКСГ":
                 df.loc[i, "unified_name"] = "ЭЛЕКТРООБОРУДОВАНИЯ ЭКСГАУСТЕРА №"
             elif name[-1] == str(j):
                 df.loc[i, "unified_name"] = name[:-1]
