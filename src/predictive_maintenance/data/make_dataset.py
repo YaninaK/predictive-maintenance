@@ -18,7 +18,7 @@ Y_TRAIN_PATH = "y_train.parquet"
 MESSAGES_PATH = "messages.xlsx"
 
 SAVE = True
-UNIFIED_TECH_PLACES_PATH = "unified_tech_places.to_parquet"
+UNIFIED_TECH_PLACES_PATH = "unified_tech_places.parquet"
 MESSAGES_UNIFIED_PATH = "messages_unified.parquet"
 
 
