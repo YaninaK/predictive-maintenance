@@ -37,32 +37,46 @@ spark = (
 
 def load_data(
     path: Optional[str] = None,
-    folder: Optional[str] = None,
+    folder_1: Optional[str] = None,
+    folder_2: Optional[str] = None,
     X_train_path: Optional[str] = None,
     y_train_path: Optional[str] = None,
     messages_path: Optional[str] = None,
     save: Optional[bool] = None,
+    unified_tech_places_path: Optional[str] = None,
+    messages_unified_path: Optional[str] = None,
 ):
     if path is None:
         path = PATH
-    if folder is None:
-        folder = FOLDER_1
+    if folder_1 is None:
+        folder_1 = FOLDER_1
+    if folder_2 is None:
+        folder_2 = FOLDER_2
 
     if X_train_path is None:
-        X_train_path = path + folder + X_TRAIN_PATH
+        X_train_path = path + folder_1 + X_TRAIN_PATH
     if y_train_path is None:
-        y_train_path = path + folder + Y_TRAIN_PATH
+        y_train_path = path + folder_1 + Y_TRAIN_PATH
     if messages_path is None:
-        messages_path = path + folder + MESSAGES_PATH
+        messages_path = path + folder_1 + MESSAGES_PATH
+
     if save is None:
         save = SAVE
+    if unified_tech_places_path is None:
+        unified_tech_places_path = path + folder_2 + UNIFIED_TECH_PLACES_PATH
+    if messages_unified_path is None:
+        messages_unified_path = path + folder_2 + MESSAGES_UNIFIED_PATH
 
     X_train = spark.read.parquet(X_train_path, header=True, inferSchema=True)
     y_train = spark.read.parquet(y_train_path, header=True, inferSchema=True)
     messages = pd.read_excel(messages_path, index_col=0)
 
-    unified_tech_places = get_unified_tech_places(y_train, save)
-    messages = add_unified_names_to_messages(messages, unified_tech_places, save)
+    unified_tech_places = get_unified_tech_places(
+        y_train, save, path, folder_2, unified_tech_places_path
+    )
+    messages = add_unified_names_to_messages(
+        messages, unified_tech_places, save, path, folder_2, messages_unified_path
+    )
 
     X_cols = get_new_X_column_names(X_train)
     X_train = rename_columns(X_train, X_cols)
@@ -74,23 +88,14 @@ def load_data(
 
 def get_unified_tech_places(
     y_train,
-    save: Optional[bool] = None,
-    path: Optional[str] = None,
-    folder: Optional[str] = None,
-    unified_tech_places_path: Optional[str] = None,
+    save: bool,
+    path: str,
+    folder: str,
+    unified_tech_places_path: str,
 ) -> pd.DataFrame:
     """
     Unifies technical places names to enable equipment comparison.
     """
-    if save is None:
-        save = SAVE
-    if path is None:
-        path = PATH
-    if folder is None:
-        folder = FOLDER_2
-    if unified_tech_places_path is None:
-        unified_tech_places_path = path + folder + UNIFIED_TECH_PLACES_PATH
-
     tech_places = y_train.schema.names[1:]
     eq = [i.split("_")[1][-1] for i in tech_places]
     desc = [i.split("_")[2] for i in tech_places]
@@ -127,25 +132,16 @@ def get_unified_tech_places(
 
 def add_unified_names_to_messages(
     messages,
-    unified_tech_places,
-    save: Optional[bool] = None,
-    path: Optional[str] = None,
-    folder: Optional[str] = None,
-    messages_unified_path: Optional[str] = None,
+    unified_tech_places: pd.DataFrame,
+    save: bool,
+    path: str,
+    folder: str,
+    messages_unified_path: str,
 ) -> pd.DataFrame:
     """
     Adds unified technical place names and equipment references to messages
     to match messages to y_train data.
     """
-    if save is None:
-        save = SAVE
-    if path is None:
-        path = PATH
-    if folder is None:
-        folder = FOLDER_2
-    if messages_unified_path is None:
-        messages_unified_path = path + folder + MESSAGES_UNIFIED_PATH
-
     desc = unified_tech_places["description"].tolist()
     unified_desc = unified_tech_places["unified_name"].tolist()
     dict_ = {desc[i]: unified_desc[i] for i in range(len(unified_desc))}
