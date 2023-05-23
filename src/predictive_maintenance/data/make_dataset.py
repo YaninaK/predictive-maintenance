@@ -10,10 +10,16 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["load_train_dataset"]
 
-PATH = "data/01_raw/"
-X_TRAIN_PATH = PATH + "X_train.parquet"
-Y_TRAIN_PATH = PATH + "y_train.parquet"
-MESSAGES_PATH = PATH + "messages.xlsx"
+PATH = ""
+FOLDER_1 = "data/01_raw/"
+FOLDER_2 = "data/02_intermediate/"
+X_TRAIN_PATH = "X_train.parquet"
+Y_TRAIN_PATH = "y_train.parquet"
+MESSAGES_PATH = "messages.xlsx"
+
+SAVE = True
+UNIFIED_TECH_PLACES_PATH = "unified_tech_places.to_parquet"
+MESSAGES_UNIFIED_PATH = "messages_unified.parquet"
 
 
 app_name = "data_preprocessing"
@@ -30,24 +36,33 @@ spark = (
 
 
 def load_data(
-    path: str,
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
     X_train_path: Optional[str] = None,
     y_train_path: Optional[str] = None,
     messages_path: Optional[str] = None,
+    save: Optional[bool] = None,
 ):
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER_1
+
     if X_train_path is None:
-        X_train_path = path + X_TRAIN_PATH
+        X_train_path = path + folder + X_TRAIN_PATH
     if y_train_path is None:
-        y_train_path = path + Y_TRAIN_PATH
+        y_train_path = path + folder + Y_TRAIN_PATH
     if messages_path is None:
-        messages_path = path + MESSAGES_PATH
+        messages_path = path + folder + MESSAGES_PATH
+    if save is None:
+        save = SAVE
 
     X_train = spark.read.parquet(X_train_path, header=True, inferSchema=True)
     y_train = spark.read.parquet(y_train_path, header=True, inferSchema=True)
     messages = pd.read_excel(messages_path, index_col=0)
 
-    unified_tech_places = get_unified_tech_places(y_train)
-    messages = add_unified_names_to_messages(messages, unified_tech_places)
+    unified_tech_places = get_unified_tech_places(y_train, save)
+    messages = add_unified_names_to_messages(messages, unified_tech_places, save)
 
     X_cols = get_new_X_column_names(X_train)
     X_train = rename_columns(X_train, X_cols)
@@ -57,7 +72,25 @@ def load_data(
     return X_train, y_train, messages, unified_tech_places
 
 
-def get_unified_tech_places(y_train) -> pd.DataFrame:
+def get_unified_tech_places(
+    y_train,
+    save: Optional[bool] = None,
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+    unified_tech_places_path: Optional[str] = None,
+) -> pd.DataFrame:
+    """
+    Unifies technical places names to enable equipment comparison.
+    """
+    if save is None:
+        save = SAVE
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER_2
+    if unified_tech_places_path is None:
+        unified_tech_places_path = path + folder + UNIFIED_TECH_PLACES_PATH
+
     tech_places = y_train.schema.names[1:]
     eq = [i.split("_")[1][-1] for i in tech_places]
     desc = [i.split("_")[2] for i in tech_places]
@@ -86,14 +119,33 @@ def get_unified_tech_places(y_train) -> pd.DataFrame:
                 df.loc[i, "unified_name"] = "ЭЛЕКТРООБОРУДОВАНИЯ ЭКСГАУСТЕРА №"
             elif name[-1] == str(j):
                 df.loc[i, "unified_name"] = name[:-1]
+    if save:
+        df.to_parquet(unified_tech_places_path)
 
     return df
 
 
-def add_unified_names_to_messages(messages, unified_tech_places) -> pd.DataFrame:
+def add_unified_names_to_messages(
+    messages,
+    unified_tech_places,
+    save: Optional[bool] = None,
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+    messages_unified_path: Optional[str] = None,
+) -> pd.DataFrame:
     """
-    Adds unified technical place names and equipment references to messages.
+    Adds unified technical place names and equipment references to messages
+    to match messages to y_train data.
     """
+    if save is None:
+        save = SAVE
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER_2
+    if messages_unified_path is None:
+        messages_unified_path = path + folder + MESSAGES_UNIFIED_PATH
+
     desc = unified_tech_places["description"].tolist()
     unified_desc = unified_tech_places["unified_name"].tolist()
     dict_ = {desc[i]: unified_desc[i] for i in range(len(unified_desc))}
@@ -102,6 +154,8 @@ def add_unified_names_to_messages(messages, unified_tech_places) -> pd.DataFrame
         original_name = messages.loc[i, "НАЗВАНИЕ_ТЕХ_МЕСТА"]
         messages.loc[i, "equipment"] = messages.loc[i, "ИМЯ_МАШИНЫ"][-1]
         messages.loc[i, "unified_name"] = dict_[original_name]
+    if save:
+        messages.to_parquet(messages_unified_path)
 
     return messages
 
