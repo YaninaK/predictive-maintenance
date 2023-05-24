@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["resample_and_save_data"]
 
-RESAMPLE_PERIOD = 60 * 30
+RESAMPLE_PERIOD = 60
 PATH = ""
 FOLDER = "data/02_intermediate/"
 
