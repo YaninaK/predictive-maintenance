@@ -75,7 +75,7 @@ def get_M_start_finish_time(
 
 def M_summary(m_dict: dict, n_days: Optional[int] = None) -> pd.DataFrame:
     """
-    Performs M1 failure selection for model validation and training.
+    Performs M1 stoppage selection for model training and validation.
     """
     if n_days is None:
         n_days = N_DAYS
@@ -112,7 +112,7 @@ def M_summary(m_dict: dict, n_days: Optional[int] = None) -> pd.DataFrame:
 
 def add_info_from_messages(df1):
     """
-    Adds missing stoppage labels from messages.
+    Adds missing M1 stoppage labels from messages.
     """
 
     df = pd.DataFrame()
