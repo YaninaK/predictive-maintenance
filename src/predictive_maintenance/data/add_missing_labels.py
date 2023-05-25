@@ -1,12 +1,18 @@
 import logging
 import pandas as pd
 import numpy as np
+import re
 from typing import Optional
 
 
 logger = logging.getLogger(__name__)
 
 __all__ = ["add_missing_labels"]
+
+
+PATH = ""
+FOLDER = "data/02_intermediate/"
+N_DAYS = 1.5
 
 
 COLUMNS_IN = ["equipment", "tech_place", "НАЗВАНИЕ_ТЕХ_МЕСТА", "ОПИСАНИЕ"]
@@ -16,6 +22,134 @@ COLUMNS_OUT = [
     "ДАТА_НАЧАЛА_НЕИСПРАВНОСТИ",
     "ДАТА_УСТРАНЕНИЯ_НЕИСПРАВНОСТИ",
 ]
+
+
+def get_M_start_finish_time(
+    M_code=1,
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+):
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER
+
+    m_dict = {}
+    t = pd.to_timedelta(1, unit="T")
+    for i in range(4, 10):
+        y = pd.read_parquet(path + folder + f"y{i}_resampled.parquet").set_index(
+            "dt_resampled"
+        )
+
+        m = np.where(y == M_code, 1, 0)
+        m = pd.DataFrame(m, index=y.index, columns=y.columns)
+
+        a = m[m.sum(axis=1) > 0].sum(axis=0)
+        y_m_cols = a[a > 0].index.tolist()
+
+        m_ = m.loc[m[y_m_cols].sum(axis=1) > 0, y_m_cols]
+        t_lists = {}
+        for col in y_m_cols:
+            a = m_[m_[col] == 1]
+            t_lists[col] = []
+            s = 0
+            t0 = a.index[0]
+            for t1 in a.index:
+                if s == 0:
+                    start_fintsh = [t0]
+                    s = 1
+                if (s == 1) & (t1 - t0 > t):
+                    start_fintsh.append(t0)
+                    t_lists[col].append(start_fintsh)
+                    s = 0
+                t0 = t1
+            if s == 1:
+                start_fintsh.append(t1)
+                t_lists[col].append(start_fintsh)
+
+        m_dict[i] = t_lists
+
+    return m_dict
+
+
+def M_summary(m_dict: dict, n_days: Optional[int] = None) -> pd.DataFrame:
+    """
+    Performs M1 failure selection for model validation and training.
+    """
+    if n_days is None:
+        n_days = N_DAYS
+
+    df = pd.DataFrame(columns=["equipment", "tech_place", "start_M"])
+    n = 0
+    for e in m_dict:
+        for col in m_dict[e]:
+            s = 0
+            for t in m_dict[e][col]:
+                df.loc[n, "equipment"] = e
+                df.loc[n, "tech_place"] = col[4:-1]
+                df.loc[n, "start_M"] = t[0]
+                df.loc[n, "end_M"] = t[1]
+                df.loc[n, "M_period"] = t[1] - t[0]
+                if s == 0:
+                    df.loc[n, "delta_between_M"] = 0
+                    df.loc[n, "accept"] = 1
+                    s = 1
+                else:
+                    df.loc[n, "delta_between_M"] = (
+                        df.loc[n, "start_M"] - df.loc[n - 1, "end_M"]
+                    )
+                    if (
+                        df.loc[n, "delta_between_M"].total_seconds()
+                        / pd.Timedelta(days=1).total_seconds()
+                        > n_days
+                    ):
+                        df.loc[n, "accept"] = 1
+                n += 1
+
+    return df
+
+
+def add_info_from_messages(df):
+    """
+    Adds missing in y_tain stoppage information from messages.
+    """
+
+    df = pd.DataFrame()
+    df.loc[0, "equipment"] = str(9)
+    df.loc[0, "tech_place"] = "9_ЭЛЕКТРООБОРУДОВАНИЯ ЭКСГАУСТЕРА №9"
+    df.loc[0, "start_M"] = pd.Timestamp("2019-03-19 14:19:00")
+    df.loc[0, "accept"] = 1
+
+    df.loc[1, "equipment"] = str(6)
+    df.loc[1, "tech_place"] = "6_ЗАДВИЖКА ЭКСГ_ №6"
+    df.loc[1, "start_M"] = pd.Timestamp("2019-05-01 19:18:00")
+    df.loc[1, "accept"] = 1
+
+    df.loc[2, "equipment"] = str(4)
+    df.loc[2, "tech_place"] = "4_ПОДШИПНИК ОПОРНЫЙ №2 ЭКСГ_ №4"
+    df.loc[2, "start_M"] = pd.Timestamp("2019-07-30 19:21:00")
+    df.loc[2, "accept"] = 1
+
+    df = pd.concat([df1, df], axis=0).sort_values(by="start_M")
+
+    return df.reset_index(drop=True)
+
+
+def get_M_messages(df, messages, m_code="M1"):
+    messages.rename(columns={"equipment": "equipment_"}, inplace=True)
+    M_messages = pd.concat(
+        [
+            df.set_index("start_M"),
+            messages[messages["ВИД_СООБЩЕНИЯ"] == m_code].set_index("start_M"),
+        ],
+        axis=1,
+    )
+    M_messages.loc[M_messages["equipment"].isnull(), "equipment"] = M_messages.loc[
+        M_messages["equipment"].isnull(), "equipment_"
+    ].astype(int)
+    M_messages.drop("equipment_", axis=1, inplace=True)
+
+    return M_messages
 
 
 def get_missing_labels_summary(
