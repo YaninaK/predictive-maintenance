@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["add_missing_labels"]
 
 
-PATH = "/content/drive/MyDrive/ML_projects/predictive_maintenance/"
+PATH = ""
 FOLDER = "data/02_intermediate/"
 N_DAYS = 1.5
 
@@ -107,9 +107,9 @@ def M_summary(m_dict: dict, n_days: Optional[int] = None) -> pd.DataFrame:
     return df
 
 
-def add_info_from_messages(df):
+def add_info_from_messages(df1, df):
     """
-    Adds missing in y_tain stoppage information from messages.
+    Adds missing in y_tain stoppage information df1 from messages.
     """
 
     df = pd.DataFrame()
