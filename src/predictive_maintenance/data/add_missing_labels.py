@@ -277,3 +277,33 @@ def get_missing_dates_9(M3_messages: pd.DataFrame, cols: Optional[list] = None):
     )
 
     return ind
+
+
+def add_missing_M3_data(df2: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Adds missing in y_train data to M3 summary df2
+    """
+
+    def clean_y_names(col):
+        col = re.sub("\(", "", col)
+        col = re.sub("\)", "", col)
+        col = re.sub("\.", "_", col)
+        return col
+
+    a = df["equipment"].tolist()
+    b = df["НАЗВАНИЕ_ТЕХ_МЕСТА"].tolist()
+    df["tech_place"] = [f"{i}_{j}" for (i, j) in zip(a, b)]
+    df["tech_place"] = df["tech_place"].apply(clean_y_names)
+
+    df["start_M"] = df.index
+    df["end_M"] = df["ДАТА_УСТРАНЕНИЯ_НЕИСПРАВНОСТИ"].tolist()
+    df["M_period"] = df["end_M"] - df["start_M"]
+
+    cols = ["equipment", "tech_place", "start_M", "end_M", "M_period"]
+    df2 = (
+        pd.concat([df2, df[cols]], axis=0)
+        .sort_values(by=["equipment", "start_M"])
+        .reset_index(drop=True)
+    )
+
+    return df2
