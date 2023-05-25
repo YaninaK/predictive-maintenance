@@ -28,6 +28,9 @@ def get_M_start_finish_time(
     path: Optional[str] = None,
     folder: Optional[str] = None,
 ):
+    """
+    Generates summary data from y_train.
+    """
     if path is None:
         path = PATH
     if folder is None:
@@ -107,9 +110,9 @@ def M_summary(m_dict: dict, n_days: Optional[int] = None) -> pd.DataFrame:
     return df
 
 
-def add_info_from_messages(df1, df):
+def add_info_from_messages(df1):
     """
-    Adds missing in y_tain stoppage information df1 from messages.
+    Adds missing stoppage labels from messages.
     """
 
     df = pd.DataFrame()
