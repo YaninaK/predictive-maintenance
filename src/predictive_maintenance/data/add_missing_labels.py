@@ -10,10 +10,9 @@ logger = logging.getLogger(__name__)
 __all__ = ["add_missing_labels"]
 
 
-PATH = ""
+PATH = "/content/drive/MyDrive/ML_projects/predictive_maintenance/"
 FOLDER = "data/02_intermediate/"
 N_DAYS = 1.5
-
 
 COLUMNS_IN = ["equipment", "tech_place", "НАЗВАНИЕ_ТЕХ_МЕСТА", "ОПИСАНИЕ"]
 COLUMNS_OUT = [
@@ -40,7 +39,6 @@ def get_M_start_finish_time(
         y = pd.read_parquet(path + folder + f"y{i}_resampled.parquet").set_index(
             "dt_resampled"
         )
-
         m = np.where(y == M_code, 1, 0)
         m = pd.DataFrame(m, index=y.index, columns=y.columns)
 
