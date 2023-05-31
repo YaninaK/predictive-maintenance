@@ -13,7 +13,10 @@ nltk.download("stopwords")
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["group_messages_by_equipment"]
+__all__ = ["EDA_utilities"]
+
+PATH = ""
+FOLDER = "data/02_intermediate/"
 
 GROUPS = {
     "oil_system": [
@@ -175,3 +178,83 @@ def get_vectorizer_and_messages_vectors(
     X = vectorizer.fit_transform(text)
 
     return vectorizer, X
+
+
+def load_y(
+    i: int, path: Optional[str] = None, folder: Optional[str] = None
+) -> pd.DataFrame:
+    """
+    Uploads resampled y_train.
+    """
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER
+
+    y = pd.read_parquet(PATH + FOLDER + f"y{i}_resampled.parquet").drop(
+        "max(epoch)", axis=1
+    )
+    y.columns = ["dt"] + [i[4:-1] for i in y.columns[1:].tolist()]
+    y.set_index("dt", inplace=True)
+
+    return y
+
+
+def get_anomaly_dict(y: pd.DataFrame, t: pd.Timedelta) -> dict:
+    """
+    Generates dictionary of anomaly start and end time for each technical place of equipment.
+    """
+    a = y.sum(axis=0)
+    tech_places = a[a > 0].T.index.tolist()
+    all_anomalies = {}
+    for tech_place in tech_places:
+        anomalies = []
+        anomaly_time_list = y.loc[y[tech_place] > 0, tech_place].index.tolist()
+        t1 = anomaly_time_list[0]
+        start_end_anomaly = [t1]
+        for t2 in anomaly_time_list[1:]:
+            if t2 - t1 > t:
+                start_end_anomaly.append(t1)
+                anomalies.append(start_end_anomaly)
+                start_end_anomaly = [t2]
+            t1 = t2
+        if len(start_end_anomaly) == 1:
+            start_end_anomaly.append(t1)
+            anomalies.append(start_end_anomaly)
+        all_anomalies[tech_place] = anomalies
+
+    return all_anomalies
+
+
+def get_description_dictionary(unified_tech_places: pd.DataFrame) -> dict:
+    """
+    Generates dictionary {description: unified_name} for y_train summary.
+    """
+    description = unified_tech_places["description"].tolist()
+    unified_name = unified_tech_places["unified_name"].tolist()
+    description_dict = {k: v for (k, v) in zip(description, unified_name)}
+
+    return description_dict
+
+
+def get_y_summary(unified_tech_places: pd.DataFrame) -> pd.DataFrame:
+    """
+    Generates summary of anomaly labels in y_train.
+    """
+    description_dict = get_description_dictionary(unified_tech_places)
+    t = pd.Timedelta("1T")
+    n = 0
+    df = pd.DataFrame()
+    for i in range(4, 10):
+        y = load_y(i)
+        all_anomalies = get_anomaly_dict(y, t)
+        for e in all_anomalies.keys():
+            for time in all_anomalies[e]:
+                df.loc[n, "equipment"] = str(i)
+                df.loc[n, "tech_place"] = e
+                df.loc[n, "start_M"] = time[0]
+                df.loc[n, "end_M"] = time[1]
+                df.loc[n, "unified_name"] = description_dict[e]
+                n += 1
+
+    return df
