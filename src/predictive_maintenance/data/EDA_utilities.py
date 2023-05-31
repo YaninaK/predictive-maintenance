@@ -191,7 +191,7 @@ def load_y(
     if folder is None:
         folder = FOLDER
 
-    y = pd.read_parquet(PATH + FOLDER + f"y{i}_resampled.parquet").drop(
+    y = pd.read_parquet(path + folder + f"y{i}_resampled.parquet").drop(
         "max(epoch)", axis=1
     )
     y.columns = ["dt"] + [i[4:-1] for i in y.columns[1:].tolist()]
