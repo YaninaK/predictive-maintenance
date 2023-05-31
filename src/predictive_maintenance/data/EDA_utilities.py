@@ -237,16 +237,25 @@ def get_description_dictionary(unified_tech_places: pd.DataFrame) -> dict:
     return description_dict
 
 
-def get_y_summary(unified_tech_places: pd.DataFrame) -> pd.DataFrame:
+def get_y_summary(
+    unified_tech_places: pd.DataFrame,
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+) -> pd.DataFrame:
     """
     Generates summary of anomaly labels in y_train.
     """
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER
+
     description_dict = get_description_dictionary(unified_tech_places)
     t = pd.Timedelta("1T")
     n = 0
     df = pd.DataFrame()
     for i in range(4, 10):
-        y = load_y(i)
+        y = load_y(i, path, folder)
         all_anomalies = get_anomaly_dict(y, t)
         for e in all_anomalies.keys():
             for time in all_anomalies[e]:
