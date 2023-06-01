@@ -189,6 +189,4 @@ def add_missing_labels(
                 t1 = anomalies.loc[j, "start_M"]
                 t2 = anomalies.loc[j, "ДАТА_УСТРАНЕНИЯ_НЕИСПРАВНОСТИ"]
                 y.loc[t1:t2, tech_place] = 2
-        y.to_parquet(
-            path + folder + f"y{i}_updated.parquet",
-        )
+        y.to_parquet(path + folder + f"y{i}_updated.parquet", compression="gzip")
