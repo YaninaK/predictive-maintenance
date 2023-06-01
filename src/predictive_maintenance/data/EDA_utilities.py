@@ -12,6 +12,7 @@ PATH = ""
 FOLDER_1 = "data/02_intermediate/"
 FOLDER_2 = "data/03_primary/"
 
+PREFIX = "X_train"
 POSTFIX = "resampled"
 
 
@@ -38,6 +39,34 @@ def load_y(
     y.set_index("dt", inplace=True)
 
     return y
+
+
+def load_X(
+    i: int,
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    postfix: Optional[str] = None,
+) -> pd.DataFrame:
+    """
+    Uploads resampled X_train or X_test.
+    """
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER_1
+    if prefix is None:
+        prefix = PREFIX
+    if postfix is None:
+        postfix = POSTFIX
+
+    X = pd.read_parquet(path + folder + prefix + f"{i}_mean_{postfix}.parquet").drop(
+        "avg(epoch)", axis=1
+    )
+    X.columns = ["dt"] + [i[4:-1] for i in X.columns[1:].tolist()]
+    X.set_index("dt", inplace=True)
+
+    return X
 
 
 def get_anomaly_dict(y: pd.DataFrame, t: pd.Timedelta) -> dict:
