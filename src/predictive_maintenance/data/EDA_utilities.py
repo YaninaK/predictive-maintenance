@@ -81,6 +81,7 @@ def get_y_summary(
     unified_tech_places: pd.DataFrame,
     path: Optional[str] = None,
     folder: Optional[str] = None,
+    postfix: Optional[str] = None,
 ) -> pd.DataFrame:
     """
     Generates summary of anomaly labels in y_train.
@@ -89,13 +90,15 @@ def get_y_summary(
         path = PATH
     if folder is None:
         folder = FOLDER_1
+    if postfix is None:
+        postfix = POSTFIX
 
     description_dictionary = get_description_dictionary(unified_tech_places)
     t = pd.Timedelta("1T")
     n = 0
     df = pd.DataFrame()
     for i in range(4, 10):
-        y = load_y(i, path, folder)
+        y = load_y(i, path, folder, postfix)
         all_anomalies = get_anomaly_dict(y, t)
         for e in all_anomalies.keys():
             for time in all_anomalies[e]:
