@@ -102,7 +102,7 @@ def load_X(
     if path is None:
         path = PATH
     if folder is None:
-        folder = FOLDER_1
+        folder = FOLDER_2
     if prefix is None:
         prefix = PREFIX
     if postfix is None:
