@@ -21,6 +21,9 @@ SAVE = True
 UNIFIED_TECH_PLACES_PATH = "unified_tech_places.parquet"
 MESSAGES_UNIFIED_PATH = "messages_unified.parquet"
 
+PREFIX = "X_train"
+POSTFIX = "resampled"
+
 
 app_name = "data_preprocessing"
 spark_ui_port = 4041
@@ -84,6 +87,38 @@ def load_data(
     )
 
     return X_train, y_train, messages, unified_tech_places
+
+
+def load_X(
+    i: int,
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    postfix: Optional[str] = None,
+) -> pd.DataFrame:
+    """
+    Uploads resampled X_train or X_test.
+    """
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER_1
+    if prefix is None:
+        prefix = PREFIX
+    if postfix is None:
+        postfix = POSTFIX
+
+    X = pd.read_parquet(path + folder + prefix + f"{i}_mean_{postfix}.parquet").drop(
+        "avg(epoch)", axis=1
+    )
+    old_cols = X.columns.tolist()
+    new_cols = ["dt"] + [col[4:-1] for col in old_cols[1:]]
+    X.rename(
+        columns={old_cols[i]: new_cols[i] for i in range(len(old_cols))}, inplace=True
+    )
+    X.set_index("dt", inplace=True)
+
+    return X
 
 
 def get_unified_tech_places(
