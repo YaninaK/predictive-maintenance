@@ -12,7 +12,6 @@ PATH = ""
 FOLDER_1 = "data/02_intermediate/"
 FOLDER_2 = "data/03_primary/"
 
-PREFIX = "X_train"
 POSTFIX = "resampled"
 
 
@@ -35,38 +34,14 @@ def load_y(
     y = pd.read_parquet(path + folder + f"y{i}_{postfix}.parquet").drop(
         "max(epoch)", axis=1
     )
-    y.columns = ["dt"] + [i[4:-1] for i in y.columns[1:].tolist()]
+    old_cols = y.columns.tolist()
+    new_cols = ["dt"] + [col[4:-1] for col in old_cols[1:]]
+    y.rename(
+        columns={old_cols[i]: new_cols[i] for i in range(len(old_cols))}, inplace=True
+    )
     y.set_index("dt", inplace=True)
 
     return y
-
-
-def load_X(
-    i: int,
-    path: Optional[str] = None,
-    folder: Optional[str] = None,
-    prefix: Optional[str] = None,
-    postfix: Optional[str] = None,
-) -> pd.DataFrame:
-    """
-    Uploads resampled X_train or X_test.
-    """
-    if path is None:
-        path = PATH
-    if folder is None:
-        folder = FOLDER_1
-    if prefix is None:
-        prefix = PREFIX
-    if postfix is None:
-        postfix = POSTFIX
-
-    X = pd.read_parquet(path + folder + prefix + f"{i}_mean_{postfix}.parquet").drop(
-        "avg(epoch)", axis=1
-    )
-    X.columns = ["dt"] + [i[4:-1] for i in X.columns[1:].tolist()]
-    X.set_index("dt", inplace=True)
-
-    return X
 
 
 def get_anomaly_dict(y: pd.DataFrame, t: pd.Timedelta) -> dict:
@@ -217,7 +192,8 @@ def add_missing_labels(
         tech_places = df_M3.loc[df_M3["equipment"] == i, "description"].unique()
         for tech_place in tech_places:
             anomalies = df_M3.loc[df_M3["description"] == tech_place, :]
-            for j in anomalies.index:
+            ind = anomalies.index.tolist()
+            for j in ind:
                 t1 = anomalies.loc[j, "start_M"]
                 t2 = anomalies.loc[j, "ДАТА_УСТРАНЕНИЯ_НЕИСПРАВНОСТИ"]
                 y.loc[t1:t2, tech_place] = 2
