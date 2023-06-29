@@ -51,7 +51,7 @@ def get_M3_dataset(
     if time_from_stoppage is None:
         time_from_stoppage = TIME_FROM_STOPPAGE
 
-    X = load_X(equipment, path).resample(freq).mean()
+    X = load_X(equipment, path).resample(freq).median().bfill().ffill()
     y = generate_targets(
         equipment,
         messages,
