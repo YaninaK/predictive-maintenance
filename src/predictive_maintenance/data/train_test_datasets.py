@@ -15,7 +15,7 @@ def combine_test_intervals(test_intervals: pd.DataFrame) -> pd.DataFrame:
     ind = []
     for i in range(1, len(test_intervals)):
         t_start_prev = test_intervals["start"][i - 1]
-        t_end_prev = test_intervals.loc["finish"][i - 1]
+        t_end_prev = test_intervals["finish"][i - 1]
         t_start = test_intervals["start"][i]
         t_end = test_intervals["finish"][i]
 
