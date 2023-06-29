@@ -147,7 +147,7 @@ def select_ethalon_periods(
     messages = messages[messages["ДАТА_УСТРАНЕНИЯ_НЕИСПРАВНОСТИ"].notnull()]
     ethalon_periods = pd.DataFrame()
     for equipment in range(4, 10):
-        X = load_X(equipment, path).resample(freq).mean()
+        X = load_X(equipment, path).resample(freq).median().bfill().ffill()
 
         vibration_cols = [f"{str(equipment)} {i}" for i in vibration_columns]
         temperature_cols = [f"{str(equipment)} {i}" for i in temperature_columns]
@@ -209,7 +209,7 @@ def get_pca_components(
 
     scaler = StandardScaler()
     df_ = ethalon_periods.copy()
-    df_.iloc[:, :-1] = scaler.fit_transform(df_.iloc[:, :-1])
+    df_.iloc[:, :-1] = scaler.fit_transform(df_.iloc[:, :-1].bfill().ffill())
     corr = df_.iloc[:, :-1].corr()
     pca = PCA(n_components="mle")
     pca.fit(corr)
@@ -222,7 +222,7 @@ def get_pca_components(
 
     pca = PCA(n_components=n_components)
     pca.fit(corr)
-    df = pd.DataFrame(pca.transform(df_.iloc[:, :-1].fillna(0)), index=df_.index)
+    df = pd.DataFrame(pca.transform(df_.iloc[:, :-1]), index=df_.index)
     df["equipment"] = df_["equipment"]
 
     return df, scaler, pca
