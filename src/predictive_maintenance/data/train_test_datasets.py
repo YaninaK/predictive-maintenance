@@ -34,7 +34,7 @@ def generate_test_dataset(
 
     all_test_periods = {}
     for equipment in range(4, 10):
-        X_test = load_X(equipment, path=PATH, prefix="X_test").resample(freq).median()
+        X_test = load_X(equipment, path, prefix="X_test").resample(freq).median()
         test_periods = []
 
         for t1 in test_intervals["start"]:
