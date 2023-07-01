@@ -5,6 +5,7 @@ from typing import Optional
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from scipy import linalg
 
 from .make_dataset import load_X
 import matplotlib.pyplot as plt
@@ -93,7 +94,7 @@ def generate_ethalon_dataset(
         time_to_stoppage,
         time_from_stoppage,
     )
-    df, errors, scaler, pca = get_pca_components(ethalon_periods, plot)
+    df, scaler, pca = get_pca_components(ethalon_periods, plot)
 
     t = pd.Timedelta(freq)
     ethalon_dataset = []
@@ -203,7 +204,16 @@ def get_pca_components(
     """
     Applies StandardScaler to scale features for PCA.
     Selects the number of components based on Kaiser's rule.
-    Generates new features based on PCA components. Calculates error matrix.
+    Generates latent variables using PCA.
+
+    Calculates Hotelling's T-squared and Q residuals to be used in Bayesian model.
+
+    Hotelling’s T2 is the sum of the normalized squared scores.
+    It measures the variation in each sample within the model indicating how far each sample
+    is from the center (scores = 0) of the model.
+
+    Q residuals represent the magnitude of the variation remaining in each sample
+    after projection through the model.
     """
     if plot is None:
         plot = PLOT
@@ -224,13 +234,17 @@ def get_pca_components(
 
     pca = PCA(n_components=n_components)
     X_transformed = pca.fit_transform(X)
-
     df = pd.DataFrame(X_transformed, index=ethalon_periods.index)
+
+    lambda_inv = linalg.inv(np.dot(X.T, X) / (X.shape[0] - 1))
+    df["Hotelling's T-squared"] = X.T.apply(
+        lambda t: np.dot(np.dot(t, lambda_inv), t.T)
+    )
+    errors = X - np.dot(X_transformed, pca.components_)
+    df["Q residuals"] = errors.T.apply(lambda e: np.dot(e, e.T))
     df["equipment"] = ethalon_periods["equipment"]
 
-    errors = X - np.dot(X_transformed, pca.components_)
-
-    return df, errors, scaler, pca
+    return df, scaler, pca
 
 
 def plot_explained_variance(pca, n_components: int):
