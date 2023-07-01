@@ -48,7 +48,7 @@ PLOT = False
 
 
 def generate_ethalon_dataset(
-    messages,
+    messages: pd.DataFrame,
     path: Optional[str] = None,
     freq: Optional[str] = None,
     max_vibration: Optional[float] = None,
@@ -93,7 +93,7 @@ def generate_ethalon_dataset(
         time_to_stoppage,
         time_from_stoppage,
     )
-    df, scaler, pca = get_pca_components(ethalon_periods, plot)
+    df, errors, scaler, pca = get_pca_components(ethalon_periods, plot)
 
     t = pd.Timedelta(freq)
     ethalon_dataset = []
@@ -112,7 +112,7 @@ def generate_ethalon_dataset(
 
 
 def select_ethalon_periods(
-    messages,
+    messages: pd.DataFrame,
     path: Optional[str] = None,
     freq: Optional[str] = None,
     max_vibration: Optional[float] = None,
@@ -159,7 +159,8 @@ def select_ethalon_periods(
             selected_periods &= X[col] < max_temperature
 
         df = messages[messages["equipment"] == str(equipment)]
-        for i in df.index:
+        ind = df.index.tolist()
+        for i in ind:
             t1 = df.loc[i, "ДАТА_НАЧАЛА_НЕИСПРАВНОСТИ"]
             t2 = df.loc[i, "ДАТА_УСТРАНЕНИЯ_НЕИСПРАВНОСТИ"]
 
@@ -202,15 +203,16 @@ def get_pca_components(
     """
     Applies StandardScaler to scale features for PCA.
     Selects the number of components based on Kaiser's rule.
-    Generates new features baseed on PCA components.
+    Generates new features based on PCA components. Calculates error matrix.
     """
     if plot is None:
         plot = PLOT
 
+    X = ethalon_periods.iloc[:, :-1].copy()
+
     scaler = StandardScaler()
-    df_ = ethalon_periods.copy()
-    df_.iloc[:, :-1] = scaler.fit_transform(df_.iloc[:, :-1].bfill().ffill())
-    corr = df_.iloc[:, :-1].corr()
+    X = scaler.fit_transform(X.bfill().ffill())
+    corr = X.corr()
     pca = PCA(n_components="mle")
     pca.fit(corr)
     n_components = (
@@ -221,11 +223,14 @@ def get_pca_components(
         plot_explained_variance(pca, n_components)
 
     pca = PCA(n_components=n_components)
-    pca.fit(corr)
-    df = pd.DataFrame(pca.transform(df_.iloc[:, :-1]), index=df_.index)
-    df["equipment"] = df_["equipment"]
+    X_transformed = pca.fit_transform(corr)
 
-    return df, scaler, pca
+    df = pd.DataFrame(X_transformed, index=ethalon_periods.index)
+    df["equipment"] = ethalon_periods["equipment"]
+
+    errors = X - np.dot(X_transformed, pca.components_)
+
+    return df, errors, scaler, pca
 
 
 def plot_explained_variance(pca, n_components: int):
