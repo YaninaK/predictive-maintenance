@@ -209,9 +209,9 @@ def get_pca_components(
         plot = PLOT
 
     X = ethalon_periods.iloc[:, :-1].copy()
-    
+
     scaler = StandardScaler()
-    X.loc[:, :] = scaler.fit_transform(X.bfill().ffill())
+    X.iloc[:, :] = scaler.fit_transform(X.bfill().ffill())
     corr = X.corr()
     pca = PCA(n_components="mle")
     pca.fit(corr)
@@ -223,7 +223,7 @@ def get_pca_components(
         plot_explained_variance(pca, n_components)
 
     pca = PCA(n_components=n_components)
-    X_transformed = pca.fit_transform(corr)
+    X_transformed = pca.fit_transform(X)
 
     df = pd.DataFrame(X_transformed, index=ethalon_periods.index)
     df["equipment"] = ethalon_periods["equipment"]
