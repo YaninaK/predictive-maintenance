@@ -209,7 +209,7 @@ def get_pca_components(
         plot = PLOT
 
     X = ethalon_periods.iloc[:, :-1].copy()
-
+    
     scaler = StandardScaler()
     X = scaler.fit_transform(X.bfill().ffill())
     corr = np.corrcoef(X)
