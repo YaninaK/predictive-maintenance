@@ -1,6 +1,7 @@
 import logging
 import pandas as pd
 import numpy as np
+from scipy import linalg
 from typing import Optional
 
 from .make_dataset import load_X
@@ -37,6 +38,15 @@ def get_M1_dataset_and_time_label(
     """
     Generates stoppages dataset for all exhauster with M1_time_label.
     M1_time_label is a time period before the stoppage.
+
+    Calculates Hotelling's T-squared and Q residuals to be used in Bayesian model.
+
+    Hotelling’s T2 is the sum of the normalized squared scores.
+    It measures the variation in each sample within the model indicating how far each sample
+    is from the center (scores = 0) of the model.
+
+    Q residuals represent the magnitude of the variation remaining in each sample
+    after projection through the model.
     """
     if path is None:
         path = PATH
@@ -64,7 +74,16 @@ def get_M1_dataset_and_time_label(
             columns={old_cols[i]: new_cols[i] for i in range(len(old_cols))},
             inplace=True,
         )
-        X = pd.DataFrame(pca.transform(scaler.transform(X)), index=X.index)
+        X_transformed = pca.transform(scaler.transform(X))
+        df = pd.DataFrame(X_transformed, index=X.index)
+        lambda_inv = linalg.inv(
+            np.dot(X_transformed.T, X_transformed) / (X_transformed.shape[0] - 1)
+        )
+        df["Hotelling's T-squared"] = df.T.apply(
+            lambda t: np.dot(np.dot(t, lambda_inv), t.T)
+        )
+        errors = X - np.dot(X_transformed, pca.components_)
+        df["Q residuals"] = errors.T.apply(lambda e: np.dot(e, e.T))
 
         M1_periods = select_M1_periods(
             equipment,
@@ -76,13 +95,13 @@ def get_M1_dataset_and_time_label(
             time_from_stoppage,
         )
         for t1, t2 in M1_periods:
-            n = X[t1 + input_period : t2].shape[0]
+            n = df[t1 + input_period : t2].shape[0]
             for i in range(n):
                 t1_input = t1 + i * t
                 t2_input = t1 + i * t + input_period
-                t_to_stoppage = X[t2_input:t2].shape[0]
+                t_to_stoppage = df[t2_input:t2].shape[0]
 
-                M1_dataset.append(X[t1_input:t2_input].values)
+                M1_dataset.append(df[t1_input:t2_input].values)
                 M1_time_label.append(t_to_stoppage)
 
     M1_dataset = np.stack(M1_dataset, axis=0)
