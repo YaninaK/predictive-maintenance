@@ -59,4 +59,5 @@ def get_model_LSTM(
 
     model = tf.keras.models.Model(encoder_inputs, decoder_outputs2, name="lstm_model")
     model.compile(optimizer=tf.keras.optimizers.Adam(), loss=tf.keras.losses.Huber())
+    
     return model
