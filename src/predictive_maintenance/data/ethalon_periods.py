@@ -212,7 +212,7 @@ def get_pca_components(
 
     scaler = StandardScaler()
     X = scaler.fit_transform(X.bfill().ffill())
-    corr = X.corr()
+    corr = np.corrcoef(X)
     pca = PCA(n_components="mle")
     pca.fit(corr)
     n_components = (
