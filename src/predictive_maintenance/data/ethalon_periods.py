@@ -211,8 +211,8 @@ def get_pca_components(
     X = ethalon_periods.iloc[:, :-1].copy()
     
     scaler = StandardScaler()
-    X = scaler.fit_transform(X.bfill().ffill())
-    corr = np.corrcoef(X)
+    X.loc[:, :] = scaler.fit_transform(X.bfill().ffill())
+    corr = X.corr()
     pca = PCA(n_components="mle")
     pca.fit(corr)
     n_components = (
