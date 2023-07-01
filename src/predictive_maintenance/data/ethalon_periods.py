@@ -236,8 +236,10 @@ def get_pca_components(
     X_transformed = pca.fit_transform(X)
     df = pd.DataFrame(X_transformed, index=ethalon_periods.index)
 
-    lambda_inv = linalg.inv(np.dot(X.T, X) / (X.shape[0] - 1))
-    df["Hotelling's T-squared"] = X.T.apply(
+    lambda_inv = linalg.inv(
+        np.dot(X_transformed.T, X_transformed) / (X_transformed.shape[0] - 1)
+    )
+    df["Hotelling's T-squared"] = df.T.apply(
         lambda t: np.dot(np.dot(t, lambda_inv), t.T)
     )
     errors = X - np.dot(X_transformed, pca.components_)
