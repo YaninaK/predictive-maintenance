@@ -80,7 +80,7 @@ def get_M1_dataset_and_time_label(
             np.dot(X_transformed.T, X_transformed) / (X_transformed.shape[0] - 1)
         )
         df["Hotelling's T-squared"] = df.T.apply(
-            lambda t: np.dot(np.dot(t, lambda_inv), t.T)
+            lambda t_: np.dot(np.dot(t_, lambda_inv), t_.T)
         )
         errors = X - np.dot(X_transformed, pca.components_)
         df["Q residuals"] = errors.T.apply(lambda e: np.dot(e, e.T))
