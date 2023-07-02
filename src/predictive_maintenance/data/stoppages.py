@@ -65,7 +65,6 @@ def get_M1_dataset_and_time_label(
 
     t = pd.Timedelta(freq)
     M1_dataset = []
-    M1_time_label = []
     for equipment in range(4, 10):
         X = load_X(equipment, path).resample(freq).median().bfill().ffill()
         old_cols = X.columns.tolist()
@@ -95,18 +94,11 @@ def get_M1_dataset_and_time_label(
             time_from_stoppage,
         )
         for t1, t2 in M1_periods:
-            n = df[t1 + input_period : t2].shape[0]
-            for i in range(n):
-                t1_input = t1 + i * t
-                t2_input = t1 + i * t + input_period
-                t_to_stoppage = df[t2_input:t2].shape[0]
-
-                M1_dataset.append(df[t1_input:t2_input].values)
-                M1_time_label.append(t_to_stoppage)
+            M1_dataset.append(df[t1:t2].values)
 
     M1_dataset = np.stack(M1_dataset, axis=0)
 
-    return M1_dataset, M1_time_label
+    return M1_dataset
 
 
 def select_M1_periods(
