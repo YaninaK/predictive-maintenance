@@ -23,7 +23,7 @@ TIME_TO_STOPPAGE = pd.Timedelta(50, "H")
 TIME_FROM_STOPPAGE = pd.Timedelta(1, "H")
 
 
-def get_M1_dataset_and_time_label(
+def get_M1_dataset(
     scaler,
     pca,
     messages,
@@ -94,7 +94,8 @@ def get_M1_dataset_and_time_label(
             time_from_stoppage,
         )
         for t1, t2 in M1_periods:
-            M1_dataset.append(df[t1:t2].values)
+            if t2 - t1 == time_to_stoppage:
+                M1_dataset.append(df[t1:t2].values)
 
     M1_dataset = np.stack(M1_dataset, axis=0)
 
