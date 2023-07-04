@@ -49,7 +49,7 @@ PLOT = False
 SEED = 25
 
 
-def generate_ethalon_dataset(
+def generate_etalon_dataset(
     messages: pd.DataFrame,
     path: Optional[str] = None,
     freq: Optional[str] = None,
@@ -87,7 +87,7 @@ def generate_ethalon_dataset(
     if seed is None:
         seed = SEED
 
-    ethalon_periods = select_ethalon_periods(
+    etalon_periods = select_etalon_periods(
         messages,
         path,
         freq,
@@ -98,29 +98,29 @@ def generate_ethalon_dataset(
         time_to_stoppage,
         time_from_stoppage,
     )
-    df, scaler, pca = get_pca_components(ethalon_periods, plot)
+    df, scaler_lstm, pca = get_pca_components(etalon_periods, plot)
 
     t = pd.Timedelta(freq)
-    ethalon_dataset = []
+    etalon_dataset = []
     for e in range(4, 10):
         df_ = df[df["equipment"] == e]
         t0 = df_.index[0]
         for t1 in df_.index[1:]:
             if t1 == t0 + time_to_stoppage:
-                ethalon_dataset.append(df_[t0 : t1 - t])
+                etalon_dataset.append(df_[t0 : t1 - t])
                 t0 += t
             elif t1 > t0 + time_to_stoppage:
                 t0 = t1
-    ethalon_dataset = np.stack(ethalon_dataset, axis=0)[:, :, :-1]
+    etalon_dataset = np.stack(etalon_dataset, axis=0)[:, :, :-1]
 
-    ind = np.arange(len(ethalon_dataset))
+    ind = np.arange(len(etalon_dataset))
     np.random.seed(seed)
     np.random.shuffle(ind)
 
-    return ethalon_dataset[ind], scaler, pca
+    return etalon_dataset[ind], scaler_lstm, pca
 
 
-def select_ethalon_periods(
+def select_etalon_periods(
     messages: pd.DataFrame,
     path: Optional[str] = None,
     freq: Optional[str] = None,
@@ -154,7 +154,7 @@ def select_ethalon_periods(
         time_from_stoppage = TIME_FROM_STOPPAGE
 
     messages = messages[messages["ДАТА_УСТРАНЕНИЯ_НЕИСПРАВНОСТИ"].notnull()]
-    ethalon_periods = pd.DataFrame()
+    etalon_periods = pd.DataFrame()
     for equipment in range(4, 10):
         X = load_X(equipment, path).resample(freq).median().bfill().ffill()
 
@@ -183,30 +183,30 @@ def select_ethalon_periods(
         t_start = t0
         t = pd.Timedelta(freq)
 
-        ethalon = pd.DataFrame()
+        etalon = pd.DataFrame()
         for t1 in ind[1:]:
             if t1 - t0 > t:
                 t_end = t0
                 if t_end - t_start >= time_to_stoppage:
-                    ethalon = pd.concat([ethalon, X[t_start:t_end]])
+                    etalon = pd.concat([etalon, X[t_start:t_end]])
                 t_start = t1
             t0 = t1
 
-        old_cols = ethalon.columns.tolist()
-        new_cols = [f"col_{i}" for i in range(ethalon.shape[1])]
-        ethalon.rename(
+        old_cols = etalon.columns.tolist()
+        new_cols = [f"col_{i}" for i in range(etalon.shape[1])]
+        etalon.rename(
             columns={old_cols[i]: new_cols[i] for i in range(len(old_cols))},
             inplace=True,
         )
-        ethalon["equipment"] = equipment
+        etalon["equipment"] = equipment
 
-        ethalon_periods = pd.concat([ethalon_periods, ethalon], axis=0)
+        etalon_periods = pd.concat([etalon_periods, etalon], axis=0)
 
-    return ethalon_periods
+    return etalon_periods
 
 
 def get_pca_components(
-    ethalon_periods,
+    etalon_periods,
     plot: Optional[bool] = None,
 ):
     """
@@ -226,7 +226,7 @@ def get_pca_components(
     if plot is None:
         plot = PLOT
 
-    X = ethalon_periods.iloc[:, :-1].copy()
+    X = etalon_periods.iloc[:, :-1].copy()
 
     scaler = StandardScaler()
     X.iloc[:, :] = scaler.fit_transform(X.bfill().ffill())
@@ -242,7 +242,7 @@ def get_pca_components(
 
     pca = PCA(n_components=n_components)
     X_transformed = pca.fit_transform(X)
-    df = pd.DataFrame(X_transformed, index=ethalon_periods.index)
+    df = pd.DataFrame(X_transformed, index=etalon_periods.index)
 
     lambda_inv = linalg.inv(
         np.dot(X_transformed.T, X_transformed) / (X_transformed.shape[0] - 1)
@@ -252,7 +252,7 @@ def get_pca_components(
     )
     errors = X - np.dot(X_transformed, pca.components_)
     df["Q residuals"] = errors.T.apply(lambda e: np.dot(e, e.T))
-    df["equipment"] = ethalon_periods["equipment"]
+    df["equipment"] = etalon_periods["equipment"]
 
     return df, scaler, pca
 
