@@ -49,6 +49,15 @@ def load_data(
     unified_tech_places_path: Optional[str] = None,
     messages_unified_path: Optional[str] = None,
 ):
+    """
+    Loads X_train, y_train and messages from raw data.
+    Renames columns of X_train and y_train to be acceptable for pyspark.
+    Cleans X_train from negative numbers, caps max oil temperature at 100
+    and max bearings temperature at 800.
+    Unifies names of tech places.
+    Adds unified names and exhauser number ('equipment) to messages.
+
+    """
     if path is None:
         path = PATH
     if folder_1 is None:
@@ -76,6 +85,8 @@ def load_data(
 
     X_cols = get_new_X_column_names(X_train)
     X_train = rename_columns(X_train, X_cols)
+    X_train = clean_data(X_train)
+
     y_cols = get_new_y_column_names(y_train)
     y_train = rename_columns(y_train, y_cols)
 
@@ -89,36 +100,61 @@ def load_data(
     return X_train, y_train, messages, unified_tech_places
 
 
-def load_X(
-    i: int,
-    path: Optional[str] = None,
-    folder: Optional[str] = None,
-    prefix: Optional[str] = None,
-    postfix: Optional[str] = None,
-) -> pd.DataFrame:
+def get_new_X_column_names(X_train) -> list:
     """
-    Uploads resampled X_train or X_test.
+    Generates unified column names.
     """
-    if path is None:
-        path = PATH
-    if folder is None:
-        folder = FOLDER_2
-    if prefix is None:
-        prefix = PREFIX
-    if postfix is None:
-        postfix = POSTFIX
+    cols = X_train.schema.names
+    new_cols = [cols[0]]
+    for col in cols[1:]:
+        col = re.sub("\.", "", col[11:])
+        col = re.sub("ТОК РОТОРА2", "ТОК РОТОРА 2", col)
+        new_cols.append(col)
 
-    X = pd.read_parquet(path + folder + prefix + f"{i}_mean_{postfix}.parquet").drop(
-        "avg(epoch)", axis=1
-    )
-    old_cols = X.columns.tolist()
-    new_cols = ["dt"] + [col[4:-1] for col in old_cols[1:]]
-    X.rename(
-        columns={old_cols[i]: new_cols[i] for i in range(len(old_cols))}, inplace=True
-    )
-    X.set_index("dt", inplace=True)
+    return new_cols
 
+
+def rename_columns(df, new_colums: list):
+    """
+    Renames columns of pyspark DataFrame.
+    """
+    old_columns = df.schema.names
+
+    return reduce(
+        lambda data, idx: data.withColumnRenamed(old_columns[idx], new_colums[idx]),
+        range(len(old_columns)),
+        df,
+    )
+
+
+def clean_data(X):
+    """
+    Converts negative values to 0.
+    Caps max oil temperature at 100.
+    Caps max bearings temperature at 800.
+    """
+    for var in X.schema.names[1:]:
+        X = X.withColumn(var, F.when(F.col(var) < 0, 0).otherwise(F.col(var)))
+        if var[2:19] == "ТЕМПЕРАТУРА МАСЛА":
+            X = X.withColumn(var, F.when(F.col(var) > 100, 100).otherwise(F.col(var)))
+        if var[2:24] == "ТЕМПЕРАТУРА ПОДШИПНИКА":
+            X = X.withColumn(var, F.when(F.col(var) > 800, 800).otherwise(F.col(var)))
     return X
+
+
+def get_new_y_column_names(y_train) -> list:
+    """
+    Generates new y_column_names.
+    """
+    cols = y_train.schema.names
+    new_cols = [cols[0]]
+    for col in cols[1:]:
+        col = re.sub("\(", "", col[18:])
+        col = re.sub("\)", "", col)
+        col = re.sub("\.", "_", col)
+        new_cols.append(col)
+
+    return new_cols
 
 
 def get_unified_tech_places(
@@ -194,43 +230,33 @@ def add_unified_names_to_messages(
     return messages
 
 
-def get_new_X_column_names(X_train) -> list:
+def load_X(
+    i: int,
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    postfix: Optional[str] = None,
+) -> pd.DataFrame:
     """
-    Generates unified column names.
+    Uploads resampled X_train or X_test.
     """
-    cols = X_train.schema.names
-    new_cols = [cols[0]]
-    for col in cols[1:]:
-        col = re.sub("\.", "", col[11:])
-        col = re.sub("ТОК РОТОРА2", "ТОК РОТОРА 2", col)
-        new_cols.append(col)
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER_2
+    if prefix is None:
+        prefix = PREFIX
+    if postfix is None:
+        postfix = POSTFIX
 
-    return new_cols
-
-
-def get_new_y_column_names(y_train) -> list:
-    """
-    Generates new y_column_names.
-    """
-    cols = y_train.schema.names
-    new_cols = [cols[0]]
-    for col in cols[1:]:
-        col = re.sub("\(", "", col[18:])
-        col = re.sub("\)", "", col)
-        col = re.sub("\.", "_", col)
-        new_cols.append(col)
-
-    return new_cols
-
-
-def rename_columns(df, new_colums: list):
-    """
-    Renames columns of pyspark DataFrame.
-    """
-    old_columns = df.schema.names
-
-    return reduce(
-        lambda data, idx: data.withColumnRenamed(old_columns[idx], new_colums[idx]),
-        range(len(old_columns)),
-        df,
+    X = pd.read_parquet(path + folder + prefix + f"{i}_mean_{postfix}.parquet").drop(
+        "avg(epoch)", axis=1
     )
+    old_cols = X.columns.tolist()
+    new_cols = ["dt"] + [col[4:-1] for col in old_cols[1:]]
+    X.rename(
+        columns={old_cols[i]: new_cols[i] for i in range(len(old_cols))}, inplace=True
+    )
+    X.set_index("dt", inplace=True)
+
+    return X
