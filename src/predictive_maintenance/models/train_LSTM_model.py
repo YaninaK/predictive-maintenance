@@ -1,4 +1,5 @@
 import logging
+import pickle
 import tensorflow as tf
 from typing import Optional
 import matplotlib.pyplot as plt
@@ -13,7 +14,10 @@ INPUT_SEQUENCE_LENGTH = 23
 N_EPOCHS = 60
 BATCH_SIZE = 64
 N_VALID = 1024
-PLOT_HISTORY = False
+
+PATH = ""
+FOLDER = "models/"
+TRAINING_HISTORY_PATH = "LSTM_history.pkl"
 
 
 def train_LSTM(
@@ -23,7 +27,9 @@ def train_LSTM(
     n_epochs: Optional[int] = None,
     batch_size: Optional[int] = None,
     n_valid: Optional[int] = None,
-    plot_history: Optional[bool] = None,
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+    training_history_path: Optional[str] = None,
 ):
     if input_sequence_length is None:
         input_sequence_length = INPUT_SEQUENCE_LENGTH
@@ -33,12 +39,18 @@ def train_LSTM(
         batch_size = BATCH_SIZE
     if n_valid is None:
         n_valid = N_VALID
-    if plot_history is None:
-        plot_history = PLOT_HISTORY
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER
+    if training_history_path is None:
+        training_history_path = path + folder + TRAINING_HISTORY_PATH
 
     reduce_lr = tf.keras.callbacks.LearningRateScheduler(
         lambda epoch: 3e-2 * 0.95**epoch
     )
+    logging.info("Training LSTM model...")
+
     history = model.fit(
         ethalon_dataset[:-n_valid, :input_sequence_length, :],
         ethalon_dataset[:-n_valid, input_sequence_length:, :],
@@ -54,16 +66,33 @@ def train_LSTM(
         workers=-1,
         use_multiprocessing=True,
     )
-    if plot_history:
-        plot_model_LSTM_training_history(history)
+
+    logging.info("Saving training history...")
+
+    with open(training_history_path, "wb") as f:
+        pickle.dump(history.history, f)
 
     return model
 
 
-def plot_model_LSTM_training_history(history):
+def plot_model_LSTM_training_history(
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+    training_history_path: Optional[str] = None,
+):
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER
+    if training_history_path is None:
+        training_history_path = path + folder + TRAINING_HISTORY_PATH
+
+    with open(training_history_path, "rb") as f:
+        history = pickle.load(f)
+
     plt.figure(figsize=(6, 4))
-    plt.plot(history.history["loss"])
-    plt.plot(history.history["val_loss"])
+    plt.plot(history["loss"])
+    plt.plot(history["val_loss"])
     plt.title("Model Loss")
     plt.xlabel("Epochs")
     plt.ylabel("Loss")
