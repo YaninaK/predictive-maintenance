@@ -46,6 +46,7 @@ TEMPERATURE_COLUMNS = [
     "ТЕМПЕРАТУРА ПОДШИПНИКА НА ОПОРЕ 4",
 ]
 PLOT = False
+SEED = 25
 
 
 def generate_ethalon_dataset(
@@ -59,6 +60,7 @@ def generate_ethalon_dataset(
     time_to_stoppage: Optional[pd.Timedelta] = None,
     time_from_stoppage: Optional[pd.Timedelta] = None,
     plot: Optional[bool] = None,
+    seed: Optional[int] = None,
 ):
     """
     Generates dataset for LSTM ethalon model.
@@ -82,6 +84,8 @@ def generate_ethalon_dataset(
         time_from_stoppage = TIME_FROM_STOPPAGE
     if plot is None:
         plot = PLOT
+    if seed is None:
+        seed = SEED
 
     ethalon_periods = select_ethalon_periods(
         messages,
@@ -109,7 +113,11 @@ def generate_ethalon_dataset(
                 t0 = t1
     ethalon_dataset = np.stack(ethalon_dataset, axis=0)[:, :, :-1]
 
-    return ethalon_dataset, scaler, pca
+    ind = np.arange(len(ethalon_dataset))
+    np.random.seed(seed)
+    np.random.shuffle(ind)
+
+    return ethalon_dataset[ind], scaler, pca
 
 
 def select_ethalon_periods(
