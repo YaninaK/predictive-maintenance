@@ -1,6 +1,7 @@
 import logging
 import tensorflow as tf
 from typing import Optional
+import matplotlib.pyplot as plt
 
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,7 @@ INPUT_SEQUENCE_LENGTH = 23
 N_EPOCHS = 60
 BATCH_SIZE = 64
 N_VALID = 1024
+PLOT_HISTORY = False
 
 
 def train_LSTM(
@@ -21,6 +23,7 @@ def train_LSTM(
     n_epochs: Optional[int] = None,
     batch_size: Optional[int] = None,
     n_valid: Optional[int] = None,
+    plot_history: Optional[bool] = None,
 ):
     if input_sequence_length is None:
         input_sequence_length = INPUT_SEQUENCE_LENGTH
@@ -30,6 +33,8 @@ def train_LSTM(
         batch_size = BATCH_SIZE
     if n_valid is None:
         n_valid = N_VALID
+    if plot_history is None:
+        plot_history = PLOT_HISTORY
 
     reduce_lr = tf.keras.callbacks.LearningRateScheduler(
         lambda epoch: 3e-2 * 0.95**epoch
@@ -49,4 +54,18 @@ def train_LSTM(
         workers=-1,
         use_multiprocessing=True,
     )
+    if plot_history:
+        plot_model_LSTM_training_history(history)
+
     return model, history
+
+
+def plot_model_LSTM_training_history(history):
+    plt.figure(figsize=(6, 4))
+    plt.plot(history.history["loss"])
+    plt.plot(history.history["val_loss"])
+    plt.title("Model Loss")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.legend(["Train", "Valid"])
+    plt.show()
