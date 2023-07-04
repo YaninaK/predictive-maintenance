@@ -57,7 +57,7 @@ def train_LSTM(
     if plot_history:
         plot_model_LSTM_training_history(history)
 
-    return model, history
+    return model
 
 
 def plot_model_LSTM_training_history(history):
