@@ -22,7 +22,7 @@ TRAINING_HISTORY_PATH = "LSTM_history.pkl"
 
 def train_LSTM(
     model,
-    ethalon_dataset,
+    etalon_dataset,
     input_sequence_length: Optional[int] = None,
     n_epochs: Optional[int] = None,
     batch_size: Optional[int] = None,
@@ -52,12 +52,12 @@ def train_LSTM(
     logging.info("Training LSTM model...")
 
     history = model.fit(
-        ethalon_dataset[:-n_valid, :input_sequence_length, :],
-        ethalon_dataset[:-n_valid, input_sequence_length:, :],
+        etalon_dataset[:-n_valid, :input_sequence_length, :],
+        etalon_dataset[:-n_valid, input_sequence_length:, :],
         epochs=n_epochs,
         validation_data=(
-            ethalon_dataset[-n_valid:, :input_sequence_length, :],
-            ethalon_dataset[-n_valid:, input_sequence_length:, :],
+            etalon_dataset[-n_valid:, :input_sequence_length, :],
+            etalon_dataset[-n_valid:, input_sequence_length:, :],
         ),
         batch_size=batch_size,
         verbose=1,
