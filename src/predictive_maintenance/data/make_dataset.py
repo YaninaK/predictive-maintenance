@@ -1,6 +1,7 @@
 import logging
 import pandas as pd
 import pyspark
+import pyspark.sql.functions as F
 import re
 from functools import reduce
 from typing import Optional
