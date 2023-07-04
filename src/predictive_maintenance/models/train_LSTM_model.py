@@ -17,6 +17,7 @@ N_VALID = 1024
 
 PATH = ""
 FOLDER = "models/"
+MODEL_PATH = "LSTM_model.h5"
 TRAINING_HISTORY_PATH = "LSTM_history.pkl"
 
 
@@ -29,6 +30,7 @@ def train_LSTM(
     n_valid: Optional[int] = None,
     path: Optional[str] = None,
     folder: Optional[str] = None,
+    model_path: Optional[str] = None,
     training_history_path: Optional[str] = None,
 ):
     if input_sequence_length is None:
@@ -43,6 +45,8 @@ def train_LSTM(
         path = PATH
     if folder is None:
         folder = FOLDER
+    if model_path is None:
+        model_path = path + folder + MODEL_PATH
     if training_history_path is None:
         training_history_path = path + folder + TRAINING_HISTORY_PATH
 
@@ -66,6 +70,10 @@ def train_LSTM(
         workers=-1,
         use_multiprocessing=True,
     )
+
+    logging.info("Saving LSTM model...")
+
+    model.save(model_path)
 
     logging.info("Saving training history...")
 
