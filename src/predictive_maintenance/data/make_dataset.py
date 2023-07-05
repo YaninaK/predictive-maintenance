@@ -18,10 +18,6 @@ X_TRAIN_PATH = "X_train.parquet"
 Y_TRAIN_PATH = "y_train.parquet"
 MESSAGES_PATH = "messages.xlsx"
 
-SAVE = True
-UNIFIED_TECH_PLACES_PATH = "unified_tech_places.parquet"
-MESSAGES_UNIFIED_PATH = "messages_unified.parquet"
-
 PREFIX = "X_train"
 POSTFIX = "resampled"
 
@@ -46,9 +42,6 @@ def load_data(
     X_train_path: Optional[str] = None,
     y_train_path: Optional[str] = None,
     messages_path: Optional[str] = None,
-    save: Optional[bool] = None,
-    unified_tech_places_path: Optional[str] = None,
-    messages_unified_path: Optional[str] = None,
 ):
     """
     Loads X_train, y_train and messages from raw data.
@@ -73,13 +66,6 @@ def load_data(
     if messages_path is None:
         messages_path = path + folder_1 + MESSAGES_PATH
 
-    if save is None:
-        save = SAVE
-    if unified_tech_places_path is None:
-        unified_tech_places_path = path + folder_2 + UNIFIED_TECH_PLACES_PATH
-    if messages_unified_path is None:
-        messages_unified_path = path + folder_2 + MESSAGES_UNIFIED_PATH
-
     X_train = spark.read.parquet(X_train_path, header=True, inferSchema=True)
     y_train = spark.read.parquet(y_train_path, header=True, inferSchema=True)
     messages = pd.read_excel(messages_path, index_col=0)
@@ -91,12 +77,8 @@ def load_data(
     y_cols = get_new_y_column_names(y_train)
     y_train = rename_columns(y_train, y_cols)
 
-    unified_tech_places = get_unified_tech_places(
-        y_cols, save, path, folder_2, unified_tech_places_path
-    )
-    messages = add_unified_names_to_messages(
-        messages, unified_tech_places, save, path, folder_2, messages_unified_path
-    )
+    unified_tech_places = get_unified_tech_places(y_cols)
+    messages = add_unified_names_to_messages(messages, unified_tech_places)
 
     return X_train, y_train, messages, unified_tech_places
 
@@ -140,6 +122,7 @@ def clean_data(X):
             X = X.withColumn(var, F.when(F.col(var) > 100, 100).otherwise(F.col(var)))
         if var[2:24] == "ТЕМПЕРАТУРА ПОДШИПНИКА":
             X = X.withColumn(var, F.when(F.col(var) > 800, 800).otherwise(F.col(var)))
+
     return X
 
 
@@ -160,10 +143,6 @@ def get_new_y_column_names(y_train) -> list:
 
 def get_unified_tech_places(
     y_cols: list,
-    save: bool,
-    path: str,
-    folder: str,
-    unified_tech_places_path: str,
 ) -> pd.DataFrame:
     """
     Unifies technical places names to enable equipment comparison.
@@ -196,8 +175,6 @@ def get_unified_tech_places(
                 df.loc[i, "unified_name"] = "ЭЛЕКТРООБОРУДОВАНИЯ ЭКСГАУСТЕРА №"
             elif name[-1] == str(j):
                 df.loc[i, "unified_name"] = name[2:-1]
-    if save:
-        df.to_parquet(unified_tech_places_path)
 
     return df
 
@@ -205,10 +182,6 @@ def get_unified_tech_places(
 def add_unified_names_to_messages(
     messages,
     unified_tech_places: pd.DataFrame,
-    save: bool,
-    path: str,
-    folder: str,
-    messages_unified_path: str,
 ) -> pd.DataFrame:
     """
     Adds unified technical place names and equipment references to messages
@@ -225,8 +198,6 @@ def add_unified_names_to_messages(
         original_name = re.sub("\.", "_", original_name)
         messages.loc[i, "equipment"] = messages.loc[i, "ИМЯ_МАШИНЫ"][-1]
         messages.loc[i, "unified_name"] = dict_[original_name]
-    if save:
-        messages.to_parquet(messages_unified_path)
 
     return messages
 
