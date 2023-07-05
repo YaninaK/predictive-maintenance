@@ -14,6 +14,10 @@ __all__ = ["save_artifacts"]
 
 PATH = ""
 
+FOLDER_2 = "data/02_intermediate/"
+UNIFIED_TECH_PLACES_PATH = "unified_tech_places.parquet"
+MESSAGES_PATH = "messages_unified.parquet"
+
 FOLDER_3 = "data/03_primary/"
 ETALON_DATASET_PATH = "etalon_dataset.npy"
 
@@ -28,6 +32,38 @@ T2_Q_FROM_LSTM_ETALON_PATH = "T2_Q_from_LSTM_etalon.parquet"
 
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+
+
+def save_unified_tech_places(
+    unified_tech_places: pd.DataFrame,
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+    unified_tech_places_path: Optional[str] = None,
+):
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER_2
+    if unified_tech_places_path is None:
+        unified_tech_places_path = path + folder + UNIFIED_TECH_PLACES_PATH
+
+    unified_tech_places.to_parquet(unified_tech_places_path)
+
+
+def save_messages(
+    messages: pd.DataFrame,
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+    messages_path: Optional[str] = None,
+):
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER_2
+    if messages_path is None:
+        messages_path = path + folder + MESSAGES_PATH
+
+    messages.to_parquet(messages_path)
 
 
 def save_etalon_dataset(
