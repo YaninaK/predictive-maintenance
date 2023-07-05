@@ -16,8 +16,7 @@ BATCH_SIZE = 64
 N_VALID = 1024
 
 PATH = ""
-FOLDER = "models/"
-MODEL_PATH = "LSTM_model.h5"
+FOLDER = "data/07_reporting/"
 TRAINING_HISTORY_PATH = "LSTM_history.pkl"
 
 
@@ -30,7 +29,6 @@ def train_LSTM(
     n_valid: Optional[int] = None,
     path: Optional[str] = None,
     folder: Optional[str] = None,
-    model_path: Optional[str] = None,
     training_history_path: Optional[str] = None,
 ):
     if input_sequence_length is None:
@@ -45,15 +43,12 @@ def train_LSTM(
         path = PATH
     if folder is None:
         folder = FOLDER
-    if model_path is None:
-        model_path = path + folder + MODEL_PATH
     if training_history_path is None:
         training_history_path = path + folder + TRAINING_HISTORY_PATH
 
     reduce_lr = tf.keras.callbacks.LearningRateScheduler(
         lambda epoch: 3e-2 * 0.95**epoch
     )
-    logging.info("Training LSTM model...")
 
     history = model.fit(
         etalon_dataset[:-n_valid, :input_sequence_length, :],
@@ -70,10 +65,6 @@ def train_LSTM(
         workers=-1,
         use_multiprocessing=True,
     )
-
-    logging.info("Saving LSTM model...")
-
-    model.save(model_path)
 
     logging.info("Saving training history...")
 
