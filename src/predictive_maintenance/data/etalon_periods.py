@@ -22,9 +22,8 @@ START = pd.Timestamp("2019-01-16 13:00:00")
 END = pd.Timestamp("2021-12-31 23:59:00")
 TIME_TO_STOPPAGE = pd.Timedelta(50, "H")
 TIME_FROM_STOPPAGE = pd.Timedelta(1, "H")
-INPUT_PERIOD = pd.Timedelta(23, "H")
 
-FREQUENCY = "1H"
+FREQUENCY = pd.Timedelta("1H")
 
 MAX_VIBRATION = 10
 MAX_TEMPERATURE = 80
@@ -50,80 +49,43 @@ SEED = 25
 
 
 def generate_etalon_dataset(
-    messages: pd.DataFrame,
-    path: Optional[str] = None,
-    freq: Optional[str] = None,
-    max_vibration: Optional[float] = None,
-    max_temperature: Optional[float] = None,
-    vibration_columns: Optional[list] = None,
-    temperature_columns: Optional[list] = None,
+    df: pd.DataFrame,
     time_to_stoppage: Optional[pd.Timedelta] = None,
-    time_from_stoppage: Optional[pd.Timedelta] = None,
-    plot: Optional[bool] = None,
+    freq: Optional[pd.Timedelta] = None,
     seed: Optional[int] = None,
 ):
-    """
-    Generates dataset for LSTM ethalon model.
-    """
-
-    if path is None:
-        path = PATH
-    if freq is None:
-        freq = FREQUENCY
-    if max_vibration is None:
-        max_vibration = MAX_VIBRATION
-    if max_temperature is None:
-        max_temperature = MAX_TEMPERATURE
-    if vibration_columns is None:
-        vibration_columns = VIBRATION_COLUMNS
-    if temperature_columns is None:
-        temperature_columns = TEMPERATURE_COLUMNS
     if time_to_stoppage is None:
         time_to_stoppage = TIME_TO_STOPPAGE
-    if time_from_stoppage is None:
-        time_from_stoppage = TIME_FROM_STOPPAGE
-    if plot is None:
-        plot = PLOT
+    if freq is None:
+        freq = FREQUENCY
     if seed is None:
         seed = SEED
 
-    etalon_periods = select_etalon_periods(
-        messages,
-        path,
-        freq,
-        max_vibration,
-        max_temperature,
-        vibration_columns,
-        temperature_columns,
-        time_to_stoppage,
-        time_from_stoppage,
-    )
-    df, scaler_lstm, pca = get_pca_components(etalon_periods, plot)
-
-    t = pd.Timedelta(freq)
+    t = freq
     etalon_dataset = []
     for e in range(4, 10):
         df_ = df[df["equipment"] == e]
-        t0 = df_.index[0]
-        for t1 in df_.index[1:]:
+        ind = df_.index.tolist()
+        t0 = ind[0]
+        for t1 in ind[1:]:
             if t1 == t0 + time_to_stoppage:
-                etalon_dataset.append(df_[t0 : t1 - t])
+                etalon_dataset.append(df_[t0 : t1 - t].values)
                 t0 += t
             elif t1 > t0 + time_to_stoppage:
                 t0 = t1
     etalon_dataset = np.stack(etalon_dataset, axis=0)[:, :, :-1]
 
-    ind = np.arange(len(etalon_dataset))
+    idx = np.arange(len(etalon_dataset))
     np.random.seed(seed)
-    np.random.shuffle(ind)
+    np.random.shuffle(idx)
 
-    return etalon_dataset[ind], scaler_lstm, pca
+    return etalon_dataset[idx]
 
 
 def select_etalon_periods(
     messages: pd.DataFrame,
     path: Optional[str] = None,
-    freq: Optional[str] = None,
+    freq: Optional[pd.Timedelta] = None,
     max_vibration: Optional[float] = None,
     max_temperature: Optional[float] = None,
     vibration_columns: Optional[list] = None,
@@ -181,7 +143,7 @@ def select_etalon_periods(
         ind = X[selected_periods].index.tolist()
         t0 = ind[0]
         t_start = t0
-        t = pd.Timedelta(freq)
+        t = freq
 
         etalon = pd.DataFrame()
         for t1 in ind[1:]:
