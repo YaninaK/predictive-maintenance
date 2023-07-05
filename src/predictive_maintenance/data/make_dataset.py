@@ -14,6 +14,7 @@ __all__ = ["load_train_dataset"]
 PATH = ""
 FOLDER_1 = "data/01_raw/"
 FOLDER_2 = "data/02_intermediate/"
+
 X_TRAIN_PATH = "X_train.parquet"
 Y_TRAIN_PATH = "y_train.parquet"
 MESSAGES_PATH = "messages.xlsx"
@@ -56,8 +57,6 @@ def load_data(
         path = PATH
     if folder_1 is None:
         folder_1 = FOLDER_1
-    if folder_2 is None:
-        folder_2 = FOLDER_2
 
     if X_train_path is None:
         X_train_path = path + folder_1 + X_TRAIN_PATH
