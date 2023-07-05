@@ -16,10 +16,11 @@ PATH = ""
 
 FOLDER_3 = "data/03_primary/"
 ETALON_DATASET_PATH = "etalon_dataset.npy"
-SCALER_LSTM_PATH = "scaler_LSTM.joblib"
-PCA_PATH = "pca.joblib"
 
 FOLDER_4 = "data/04_feature/"
+SCALER_LSTM_PATH = "scaler_lstm.joblib"
+PCA_PATH = "pca.joblib"
+FITTED_LSTM_MODEL_PATH = "LSTM_model.h5"
 SCALER_BMB_PATH = "scaler_bmb.joblib"
 
 FOLDER_5 = "data/05_model_input/"
@@ -45,20 +46,20 @@ def save_etalon_dataset(
     np.save(etalon_dataset_path, etalon_dataset)
 
 
-def save_scaler_LSTM(
-    scaler_LSTM,
+def save_scaler_lstm(
+    scaler_lstm,
     path: Optional[str] = None,
     folder: Optional[str] = None,
-    scaler_LSTM_path: Optional[str] = None,
+    scaler_lstm_path: Optional[str] = None,
 ):
     if path is None:
         path = PATH
     if folder is None:
-        folder = FOLDER_3
-    if scaler_LSTM_path is None:
-        scaler_LSTM_path = path + folder + SCALER_LSTM_PATH
+        folder = FOLDER_4
+    if scaler_lstm_path is None:
+        scaler_lstm_path = path + folder + SCALER_LSTM_PATH
 
-    joblib.dump(scaler_LSTM, scaler_LSTM_path)
+    joblib.dump(scaler_lstm, scaler_lstm_path)
 
 
 def save_pca(
@@ -70,11 +71,27 @@ def save_pca(
     if path is None:
         path = PATH
     if folder is None:
-        folder = FOLDER_3
+        folder = FOLDER_4
     if pca_path is None:
         pca_path = path + folder + PCA_PATH
 
     joblib.dump(pca, pca_path)
+
+
+def save_fitted_LSTM_model(
+    fitted_LSTM_model,
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+    fitted_LSTM_model_path: Optional[str] = None,
+):
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER_4
+    if fitted_LSTM_model_path is None:
+        fitted_LSTM_model_path = path + folder + FITTED_LSTM_MODEL_PATH
+
+    fitted_LSTM_model.save(fitted_LSTM_model_path)
 
 
 def save_scaler_bmb(
