@@ -12,7 +12,7 @@ __all__ = ["load_inference_artifacts"]
 
 PATH = ""
 FOLDER = "data/04_feature/"
-SCALER_LSTM_PATH = "scaler_LSTM.joblib"
+SCALER_LSTM_PATH = "scaler_lstm.joblib"
 PCA_PATH = "pca.joblib"
 FITTED_LSTM_MODEL_PATH = "LSTM_model.h5"
 SCALER_BMB_PATH = "scaler_bmb.joblib"
@@ -21,7 +21,7 @@ SCALER_BMB_PATH = "scaler_bmb.joblib"
 def load_inference_artifacts(
     path: Optional[str] = None,
     folder: Optional[str] = None,
-    scaler_LSTM_path: Optional[str] = None,
+    scaler_lstm_path: Optional[str] = None,
     pca_path: Optional[str] = None,
     LSTM_model_path: Optional[str] = None,
     scaler_bmb_path: Optional[str] = None,
@@ -33,8 +33,8 @@ def load_inference_artifacts(
         path = PATH
     if folder is None:
         folder = FOLDER
-    if scaler_LSTM_path is None:
-        scaler_LSTM_path = path + folder + SCALER_LSTM_PATH
+    if scaler_lstm_path is None:
+        scaler_lstm_path = path + folder + SCALER_LSTM_PATH
     if pca_path is None:
         pca_path = path + folder + PCA_PATH
     if LSTM_model_path is None:
@@ -44,9 +44,9 @@ def load_inference_artifacts(
 
     logging.info("Loading inference artifacts...")
 
-    scaler_LSTM_path = joblib.load(scaler_LSTM_path)
+    scaler_lstm = joblib.load(scaler_lstm_path)
     pca = joblib.load(pca_path)
     LSTM_model = tf.keras.models.load_model(LSTM_model_path)
-    scaler_bmb_path = joblib.load(scaler_bmb_path)
+    scaler_bmb = joblib.load(scaler_bmb_path)
 
-    return (scaler_LSTM_path, pca, LSTM_model, scaler_bmb_path)
+    return (scaler_lstm, pca, LSTM_model, scaler_bmb)
