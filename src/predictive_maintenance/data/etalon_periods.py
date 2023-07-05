@@ -54,6 +54,9 @@ def generate_etalon_dataset(
     freq: Optional[pd.Timedelta] = None,
     seed: Optional[int] = None,
 ):
+    """
+    Generates etalon dataset for training LSTM model.
+    """
     if time_to_stoppage is None:
         time_to_stoppage = TIME_TO_STOPPAGE
     if freq is None:
