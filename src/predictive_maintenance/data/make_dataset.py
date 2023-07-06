@@ -11,16 +11,10 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["load_train_dataset"]
 
-PATH = ""
-FOLDER_1 = "data/01_raw/"
-FOLDER_2 = "data/02_intermediate/"
 
-X_TRAIN_PATH = "X_train.parquet"
-Y_TRAIN_PATH = "y_train.parquet"
-MESSAGES_PATH = "messages.xlsx"
-
-PREFIX = "X_train"
-POSTFIX = "resampled"
+X_TRAIN_PATH = "data/01_raw/X_train.parquet"
+Y_TRAIN_PATH = "data/01_raw/y_train.parquet"
+MESSAGES_PATH = "data/01_raw/messages.xlsx"
 
 
 app_name = "data_preprocessing"
@@ -37,9 +31,6 @@ spark = (
 
 
 def load_data(
-    path: Optional[str] = None,
-    folder_1: Optional[str] = None,
-    folder_2: Optional[str] = None,
     X_train_path: Optional[str] = None,
     y_train_path: Optional[str] = None,
     messages_path: Optional[str] = None,
@@ -53,17 +44,12 @@ def load_data(
     Adds unified names and exhauser number ('equipment) to messages.
 
     """
-    if path is None:
-        path = PATH
-    if folder_1 is None:
-        folder_1 = FOLDER_1
-
     if X_train_path is None:
-        X_train_path = path + folder_1 + X_TRAIN_PATH
+        X_train_path = X_TRAIN_PATH
     if y_train_path is None:
-        y_train_path = path + folder_1 + Y_TRAIN_PATH
+        y_train_path = Y_TRAIN_PATH
     if messages_path is None:
-        messages_path = path + folder_1 + MESSAGES_PATH
+        messages_path = MESSAGES_PATH
 
     X_train = spark.read.parquet(X_train_path, header=True, inferSchema=True)
     y_train = spark.read.parquet(y_train_path, header=True, inferSchema=True)
@@ -199,35 +185,3 @@ def add_unified_names_to_messages(
         messages.loc[i, "unified_name"] = dict_[original_name]
 
     return messages
-
-
-def load_X(
-    i: int,
-    path: Optional[str] = None,
-    folder: Optional[str] = None,
-    prefix: Optional[str] = None,
-    postfix: Optional[str] = None,
-) -> pd.DataFrame:
-    """
-    Uploads resampled X_train or X_test.
-    """
-    if path is None:
-        path = PATH
-    if folder is None:
-        folder = FOLDER_2
-    if prefix is None:
-        prefix = PREFIX
-    if postfix is None:
-        postfix = POSTFIX
-
-    X = pd.read_parquet(path + folder + prefix + f"{i}_mean_{postfix}.parquet").drop(
-        "avg(epoch)", axis=1
-    )
-    old_cols = X.columns.tolist()
-    new_cols = ["dt"] + [col[4:-1] for col in old_cols[1:]]
-    X.rename(
-        columns={old_cols[i]: new_cols[i] for i in range(len(old_cols))}, inplace=True
-    )
-    X.set_index("dt", inplace=True)
-
-    return X
