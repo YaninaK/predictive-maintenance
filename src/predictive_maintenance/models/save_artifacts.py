@@ -19,12 +19,13 @@ UNIFIED_TECH_PLACES_PATH = "unified_tech_places.parquet"
 MESSAGES_PATH = "messages_unified.parquet"
 
 FOLDER_3 = "data/03_primary/"
+ETALON_PERIODS_PATH = "etalon_periods.joblib"
+ETALON_FEATURES_PATH = "etalon_features.parquet"
 ETALON_DATASET_PATH = "etalon_dataset.npy"
 
 FOLDER_4 = "data/04_feature/"
 SCALER_LSTM_PATH = "scaler_lstm.joblib"
 PCA_PATH = "pca.joblib"
-FITTED_LSTM_MODEL_PATH = "LSTM_model.h5"
 SCALER_BMB_PATH = "scaler_bmb.joblib"
 
 FOLDER_5 = "data/05_model_input/"
@@ -66,20 +67,36 @@ def save_messages(
     messages.to_parquet(messages_path)
 
 
-def save_etalon_dataset(
-    etalon_dataset,
+def save_etalon_periods(
+    etalon_periods,
     path: Optional[str] = None,
     folder: Optional[str] = None,
-    etalon_dataset_path: Optional[str] = None,
+    etalon_periods_path: Optional[str] = None,
 ):
     if path is None:
         path = PATH
     if folder is None:
         folder = FOLDER_3
-    if etalon_dataset_path is None:
-        etalon_dataset_path = path + folder + ETALON_DATASET_PATH
+    if etalon_periods_path is None:
+        etalon_periods_path = path + folder + ETALON_PERIODS_PATH
 
-    np.save(etalon_dataset_path, etalon_dataset)
+    joblib.dump(etalon_periods, etalon_periods_path)
+
+
+def save_etalon_features(
+    etalon_features,
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+    etalon_features_path: Optional[str] = None,
+):
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER_3
+    if etalon_features_path is None:
+        etalon_features_path = path + folder + ETALON_FEATURES_PATH
+
+    etalon_features.to_parquet(etalon_features_path, compression="gzip")
 
 
 def save_scaler_lstm(
@@ -114,20 +131,20 @@ def save_pca(
     joblib.dump(pca, pca_path)
 
 
-def save_fitted_LSTM_model(
-    fitted_LSTM_model,
+def save_etalon_dataset(
+    etalon_dataset,
     path: Optional[str] = None,
     folder: Optional[str] = None,
-    fitted_LSTM_model_path: Optional[str] = None,
+    etalon_dataset_path: Optional[str] = None,
 ):
     if path is None:
         path = PATH
     if folder is None:
-        folder = FOLDER_4
-    if fitted_LSTM_model_path is None:
-        fitted_LSTM_model_path = path + folder + FITTED_LSTM_MODEL_PATH
+        folder = FOLDER_3
+    if etalon_dataset_path is None:
+        etalon_dataset_path = path + folder + ETALON_DATASET_PATH
 
-    fitted_LSTM_model.save(fitted_LSTM_model_path)
+    np.save(etalon_dataset_path, etalon_dataset)
 
 
 def save_scaler_bmb(
@@ -141,7 +158,7 @@ def save_scaler_bmb(
     if folder is None:
         folder = FOLDER_4
     if scaler_bmb_path is None:
-        scaler_bmb_path = path + folder + SCALER_BMB_PATH
+        scaler_bmb_path = SCALER_BMB_PATH
 
     joblib.dump(scaler_bmb, scaler_bmb_path)
 
