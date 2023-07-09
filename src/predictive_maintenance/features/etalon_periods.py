@@ -218,7 +218,8 @@ def get_pca_components(
 
     pca = PCA(n_components=n_components)
     X_transformed = pca.fit_transform(X)
-    df = pd.DataFrame(X_transformed, index=etalon_periods.index)
+    cols = [f"factor_{i}" for i in range(n_components)]
+    df = pd.DataFrame(X_transformed, index=etalon_periods.index, columns=cols)
 
     lambda_inv = linalg.inv(
         np.dot(X_transformed.T, X_transformed) / (X_transformed.shape[0] - 1)
