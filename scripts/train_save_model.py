@@ -122,7 +122,7 @@ def train_store_lstm(
     )
     n = n_valid
     t = input_sequence_length
-    model.fit(
+    history = model.fit(
         etalon_dataset[:-n, :t, :],
         etalon_dataset[:-n, t:, :],
         epochs=n_epochs,
@@ -135,6 +135,7 @@ def train_store_lstm(
         use_multiprocessing=True,
     )
     store(model, filename, model_type="tf")
+    store(history.history, "model_LSTM_training_history")
 
     return model
 
