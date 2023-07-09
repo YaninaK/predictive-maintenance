@@ -6,13 +6,46 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["EDA_utilities"]
+__all__ = ["utilities"]
 
 PATH = ""
 FOLDER_1 = "data/02_intermediate/"
 FOLDER_2 = "data/03_primary/"
 
+PREFIX = "X_train"
 POSTFIX = "resampled"
+
+
+def load_X(
+    i: int,
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+    prefix: Optional[str] = None,
+    postfix: Optional[str] = None,
+) -> pd.DataFrame:
+    """
+    Uploads resampled X_train or X_test.
+    """
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER_1
+    if prefix is None:
+        prefix = PREFIX
+    if postfix is None:
+        postfix = POSTFIX
+
+    X = pd.read_parquet(path + folder + prefix + f"{i}_mean_{postfix}.parquet").drop(
+        "avg(epoch)", axis=1
+    )
+    old_cols = X.columns.tolist()
+    new_cols = ["dt"] + [col[4:-1] for col in old_cols[1:]]
+    X.rename(
+        columns={old_cols[i]: new_cols[i] for i in range(len(old_cols))}, inplace=True
+    )
+    X.set_index("dt", inplace=True)
+
+    return X
 
 
 def load_y(
