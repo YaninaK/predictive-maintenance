@@ -48,7 +48,7 @@ def save_unified_tech_places(
     if unified_tech_places_path is None:
         unified_tech_places_path = path + folder + UNIFIED_TECH_PLACES_PATH
 
-    unified_tech_places.to_parquet(unified_tech_places_path, compression="gip")
+    unified_tech_places.to_parquet(unified_tech_places_path, compression="gzip")
 
 
 def save_messages(
@@ -64,7 +64,7 @@ def save_messages(
     if messages_path is None:
         messages_path = path + folder + MESSAGES_PATH
 
-    messages.to_parquet(messages_path, compression="gip")
+    messages.to_parquet(messages_path, compression="gzip")
 
 
 def save_etalon_periods(
