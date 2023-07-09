@@ -30,10 +30,10 @@ spark = (
 
 def save_resampled_X(
     X,
-    prefix="X_train",
     period: Optional[int] = None,
     path: Optional[str] = None,
     folder: Optional[str] = None,
+    prefix="X_train",
 ):
     """
     Resamples X_train or X_test into larger periods, splits it into 6 parts
