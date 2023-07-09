@@ -2,6 +2,9 @@ import logging
 import pandas as pd
 import numpy as np
 from typing import Optional
+import matplotlib.pyplot as plt
+
+from models.serialize import load
 
 
 logger = logging.getLogger(__name__)
@@ -11,9 +14,12 @@ __all__ = ["utilities"]
 PATH = ""
 FOLDER_1 = "data/02_intermediate/"
 FOLDER_2 = "data/03_primary/"
+FOLDER_3 = "models/"
 
 PREFIX = "X_train"
 POSTFIX = "resampled"
+
+TRAINING_HISTORY_PATH = "model_LSTM_training_history.joblib"
 
 
 def load_X(
@@ -231,3 +237,27 @@ def add_missing_labels(
                 t2 = anomalies.loc[j, "ДАТА_УСТРАНЕНИЯ_НЕИСПРАВНОСТИ"]
                 y.loc[t1:t2, tech_place] = 2
         y.to_parquet(path + folder + f"y{i}_updated.parquet", compression="gzip")
+
+
+def plot_model_LSTM_training_history(
+    path: Optional[str] = None,
+    folder: Optional[str] = None,
+    training_history_path: Optional[str] = None,
+):
+    if path is None:
+        path = PATH
+    if folder is None:
+        folder = FOLDER_3
+    if training_history_path is None:
+        training_history_path = path + folder + TRAINING_HISTORY_PATH
+
+    history = load("model_LSTM_training_history")
+
+    plt.figure(figsize=(6, 4))
+    plt.plot(history["loss"])
+    plt.plot(history["val_loss"])
+    plt.title("Model Loss")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.legend(["Train", "Valid"])
+    plt.show()
