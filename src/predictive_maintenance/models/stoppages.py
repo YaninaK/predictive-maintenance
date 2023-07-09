@@ -4,7 +4,7 @@ import numpy as np
 from scipy import linalg
 from typing import Optional
 
-from .utilities import load_X
+from data.utilities import load_X
 
 
 logger = logging.getLogger(__name__)
@@ -22,6 +22,22 @@ OUTPUT_SEQUENCE_LENGTH = 27
 
 TIME_FROM_STOPPAGE = pd.Timedelta(1, "H")
 STOPPAGES = ["ТЕХНИЧЕСКИЕ НЕПЛАНОВЫЕ", "ТЕХНОЛОГИЧЕСКИЕ НЕПЛАНОВЫЕ"]
+
+
+def preprocess_stoppages(model_LSTM, M1_dataset, scaler_bmb) -> pd.DataFrame:
+    """
+    Makes predictions of model_LSTM fitted on etalon dataset to generate
+    Hotelling's T-squared and Q residuals for forecasted period.
+    Uses standard scaler fitted on etalon dataset to transform forecasted Hotelling's
+    T-squared and Q residuals, obtaining results compareable to the ones of etalon dataset.
+    Generates dataset for inference of Bayesian model.
+    """
+    pred_stoppages = model_LSTM.predict(M1_dataset)
+    T2_Q_from_stoppages = pred_stoppages[:, :, -2:].reshape(-1, 2)
+    T2_Q_from_stoppages = scaler_bmb.transform(T2_Q_from_stoppages)
+    T2_Q_from_stoppages = pd.DataFrame(T2_Q_from_stoppages, columns=["T2", "Q"])
+
+    return T2_Q_from_stoppages
 
 
 def get_M1_dataset(
