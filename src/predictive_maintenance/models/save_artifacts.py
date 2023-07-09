@@ -79,7 +79,7 @@ def save_etalon_periods(
         folder = FOLDER_3
     if etalon_periods_path is None:
         etalon_periods_path = path + folder + ETALON_PERIODS_PATH
-    
+
     etalon_periods.to_parquet(etalon_periods_path, compression="gzip")
 
 
@@ -158,7 +158,7 @@ def save_scaler_bmb(
     if folder is None:
         folder = FOLDER_4
     if scaler_bmb_path is None:
-        scaler_bmb_path = SCALER_BMB_PATH
+        scaler_bmb_path = path + folder + SCALER_BMB_PATH
 
     joblib.dump(scaler_bmb, scaler_bmb_path)
 
