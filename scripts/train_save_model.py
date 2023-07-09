@@ -85,7 +85,7 @@ def main():
 
     logging.info("Reading data...")
 
-    X_train, _, messages, unified_tech_places = load_data(
+    X_train, _, messages, _ = load_data(
         args.data_path, args.labels_path, args.messages_path
     )
     logging.info("Preprocessing data for LSTM model...")
