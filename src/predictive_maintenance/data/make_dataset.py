@@ -6,6 +6,8 @@ import re
 from functools import reduce
 from typing import Optional
 
+from models.save_artifacts import save_unified_tech_places, save_messages
+
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +17,10 @@ __all__ = ["load_train_dataset"]
 X_TRAIN_PATH = "data/01_raw/X_train.parquet"
 Y_TRAIN_PATH = "data/01_raw/y_train.parquet"
 MESSAGES_PATH = "data/01_raw/messages.xlsx"
+SAVE = True
 
 
-app_name = "data_preprocessing"
+app_name = "loading_data"
 spark_ui_port = 4041
 
 spark = (
@@ -34,6 +37,7 @@ def load_data(
     X_train_path: Optional[str] = None,
     y_train_path: Optional[str] = None,
     messages_path: Optional[str] = None,
+    save: Optional[bool] = None,
 ):
     """
     Loads X_train, y_train and messages from raw data.
@@ -50,6 +54,8 @@ def load_data(
         y_train_path = Y_TRAIN_PATH
     if messages_path is None:
         messages_path = MESSAGES_PATH
+    if save is None:
+        save = SAVE
 
     X_train = spark.read.parquet(X_train_path, header=True, inferSchema=True)
     y_train = spark.read.parquet(y_train_path, header=True, inferSchema=True)
@@ -64,6 +70,10 @@ def load_data(
 
     unified_tech_places = get_unified_tech_places(y_cols)
     messages = add_unified_names_to_messages(messages, unified_tech_places)
+
+    if save:
+        save_unified_tech_places(unified_tech_places)
+        save_messages(messages)
 
     return X_train, y_train, messages, unified_tech_places
 
