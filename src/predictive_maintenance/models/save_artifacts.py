@@ -80,7 +80,7 @@ def save_etalon_periods(
     if etalon_periods_path is None:
         etalon_periods_path = path + folder + ETALON_PERIODS_PATH
     
-    etalon_periods.to_parquet(etalon_periods_path, compression="gip")
+    etalon_periods.to_parquet(etalon_periods_path, compression="gzip")
 
 
 def save_etalon_features(
