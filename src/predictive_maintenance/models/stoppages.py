@@ -93,8 +93,8 @@ def get_M1_dataset(
             freq,
             input_sequence_length,
             output_sequence_length,
-            time_from_stoppage, 
-            stoppages      
+            time_from_stoppage,
+            stoppages,
         )
         for t1, t2 in M1_periods:
             M1_dataset.append(df[t1 : t1 + input_period].values)
