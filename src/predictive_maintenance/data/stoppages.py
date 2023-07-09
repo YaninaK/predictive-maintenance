@@ -4,7 +4,7 @@ import numpy as np
 from scipy import linalg
 from typing import Optional
 
-from .make_dataset import load_X
+from .utilities import load_X
 
 
 logger = logging.getLogger(__name__)
@@ -13,14 +13,15 @@ __all__ = ["generate_stoppages_dataset"]
 
 
 PATH = ""
-STOPPAGES = ["ТЕХНИЧЕСКИЕ НЕПЛАНОВЫЕ", "ТЕХНОЛОГИЧЕСКИЕ НЕПЛАНОВЫЕ"]
-FREQUENCY = "1H"
 
 START = pd.Timestamp("2019-01-16 13:00:00")
+FREQUENCY = pd.Timedelta("1H")
 
-INPUT_PERIOD = pd.Timedelta(23, "H")
-TIME_TO_STOPPAGE = pd.Timedelta(50, "H")
+INPUT_SEQUENCE_LENGTH = 23
+OUTPUT_SEQUENCE_LENGTH = 27
+
 TIME_FROM_STOPPAGE = pd.Timedelta(1, "H")
+STOPPAGES = ["ТЕХНИЧЕСКИЕ НЕПЛАНОВЫЕ", "ТЕХНОЛОГИЧЕСКИЕ НЕПЛАНОВЫЕ"]
 
 
 def get_M1_dataset(
@@ -28,12 +29,12 @@ def get_M1_dataset(
     pca,
     messages,
     path: Optional[str] = None,
-    freq: Optional[str] = None,
-    stoppages: Optional[list] = None,
     start: Optional[pd.Timestamp] = None,
-    input_period: Optional[pd.Timedelta] = None,
-    time_to_stoppage: Optional[pd.Timedelta] = None,
+    freq: Optional[pd.Timedelta] = None,
+    input_sequence_length: Optional[int] = None,
+    output_sequence_length: Optional[int] = None,
     time_from_stoppage: Optional[pd.Timedelta] = None,
+    stoppages: Optional[list] = None,
 ):
     """
     Generates stoppages dataset for all exhauster with M1_time_label.
@@ -50,24 +51,24 @@ def get_M1_dataset(
     """
     if path is None:
         path = PATH
-    if freq is None:
-        freq = FREQUENCY
-    if stoppages is None:
-        stoppages = STOPPAGES
     if start is None:
         start = START
-    if input_period is None:
-        input_period = INPUT_PERIOD
-    if time_to_stoppage is None:
-        time_to_stoppage = TIME_TO_STOPPAGE
+    if freq is None:
+        freq = FREQUENCY
+    if input_sequence_length is None:
+        input_sequence_length = INPUT_SEQUENCE_LENGTH
+    if output_sequence_length is None:
+        output_sequence_length = OUTPUT_SEQUENCE_LENGTH
     if time_from_stoppage is None:
         time_from_stoppage = TIME_FROM_STOPPAGE
+    if stoppages is None:
+        stoppages = STOPPAGES
 
-    t = pd.Timedelta(freq)
+    input_period = freq * input_sequence_length
     M1_dataset = []
     M1_labels = []
     for equipment in range(4, 10):
-        X = load_X(equipment, path).resample(freq).median().bfill().ffill()
+        X = load_X(equipment, path).bfill().ffill()
         old_cols = X.columns.tolist()
         new_cols = [f"col_{i}" for i in range(X.shape[1])]
         X.rename(
@@ -88,15 +89,16 @@ def get_M1_dataset(
         M1_periods = select_M1_periods(
             equipment,
             messages,
-            stoppages,
             start,
-            input_period,
-            time_to_stoppage,
-            time_from_stoppage,
+            freq,
+            input_sequence_length,
+            output_sequence_length,
+            time_from_stoppage, 
+            stoppages      
         )
         for t1, t2 in M1_periods:
             M1_dataset.append(df[t1 : t1 + input_period].values)
-            label = (t2 - (t1 + input_period)) // pd.Timedelta(freq)
+            label = (t2 - (t1 + input_period)) // freq
             M1_labels.append(label)
 
     M1_dataset = np.stack(M1_dataset, axis=0)
@@ -107,26 +109,32 @@ def get_M1_dataset(
 def select_M1_periods(
     equipment: int,
     messages: pd.DataFrame,
-    stoppages: Optional[list] = None,
     start: Optional[pd.Timestamp] = None,
-    input_period: Optional[pd.Timedelta] = None,
-    time_to_stoppage: Optional[pd.Timedelta] = None,
+    freq: Optional[pd.Timedelta] = None,
+    input_sequence_length: Optional[int] = None,
+    output_sequence_length: Optional[int] = None,
     time_from_stoppage: Optional[pd.Timedelta] = None,
+    stoppages: Optional[list] = None,
 ):
     """
     For particular exhauster, selects periods of unplanned stoppages listed in messages
     starting from a given time before stoppage and ending by a given time after stoppage.
     """
-    if stoppages is None:
-        stoppages = STOPPAGES
     if start is None:
         start = START
-    if input_period is None:
-        input_period = INPUT_PERIOD
-    if time_to_stoppage is None:
-        time_to_stoppage = TIME_TO_STOPPAGE
+    if freq is None:
+        freq = FREQUENCY
+    if input_sequence_length is None:
+        input_sequence_length = INPUT_SEQUENCE_LENGTH
+    if output_sequence_length is None:
+        output_sequence_length = OUTPUT_SEQUENCE_LENGTH
     if time_from_stoppage is None:
         time_from_stoppage = TIME_FROM_STOPPAGE
+    if stoppages is None:
+        stoppages = STOPPAGES
+
+    input_period = freq * input_sequence_length
+    time_to_stoppage = freq * (input_sequence_length + output_sequence_length)
     df = messages[
         (messages["equipment"] == str(equipment)) & (messages["ВИД_СООБЩЕНИЯ"] == "M1")
     ]
