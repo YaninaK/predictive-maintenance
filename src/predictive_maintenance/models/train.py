@@ -7,7 +7,7 @@ sys.path.append(os.path.join(os.getcwd(), "src", "predictive_maintenance"))
 import logging
 import pandas as pd
 import numpy as np
-from sclearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler
 from typing import Optional
 
 from data.resample_dataset import save_resampled_X
