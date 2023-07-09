@@ -10,7 +10,6 @@ import numpy as np
 from sclearn.preprocessing import StandardScaler
 from typing import Optional
 
-from data.make_dataset import load_data
 from data.resample_dataset import save_resampled_X
 from features.etalon_periods import (
     select_etalon_periods,
