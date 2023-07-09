@@ -19,7 +19,7 @@ UNIFIED_TECH_PLACES_PATH = "unified_tech_places.parquet"
 MESSAGES_PATH = "messages_unified.parquet"
 
 FOLDER_3 = "data/03_primary/"
-ETALON_PERIODS_PATH = "etalon_periods.joblib"
+ETALON_PERIODS_PATH = "etalon_periods.parquet"
 ETALON_FEATURES_PATH = "etalon_features.parquet"
 ETALON_DATASET_PATH = "etalon_dataset.npy"
 
@@ -48,7 +48,7 @@ def save_unified_tech_places(
     if unified_tech_places_path is None:
         unified_tech_places_path = path + folder + UNIFIED_TECH_PLACES_PATH
 
-    unified_tech_places.to_parquet(unified_tech_places_path)
+    unified_tech_places.to_parquet(unified_tech_places_path, compression="gip")
 
 
 def save_messages(
@@ -64,7 +64,7 @@ def save_messages(
     if messages_path is None:
         messages_path = path + folder + MESSAGES_PATH
 
-    messages.to_parquet(messages_path)
+    messages.to_parquet(messages_path, compression="gip")
 
 
 def save_etalon_periods(
@@ -79,8 +79,8 @@ def save_etalon_periods(
         folder = FOLDER_3
     if etalon_periods_path is None:
         etalon_periods_path = path + folder + ETALON_PERIODS_PATH
-
-    joblib.dump(etalon_periods, etalon_periods_path)
+    
+    etalon_periods.to_parquet(etalon_periods_path, compression="gip")
 
 
 def save_etalon_features(
