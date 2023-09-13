@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from typing import Optional
 
-from .make_dataset import load_X
+from .utilities import load_X
 
 
 logger = logging.getLogger(__name__)
