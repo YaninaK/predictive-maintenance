@@ -72,7 +72,7 @@ def generate_etalon_dataset(
     time_to_stoppage = freq * (input_sequence_length + output_sequence_length)
     etalon_dataset = []
     for e in range(4, 10):
-        df_ = df[df["equipment"] == str(e)]
+        df_ = df[df["equipment"] == e]
         ind = df_.index.tolist()
         t0 = ind[0]
         for t1 in ind[1:]:
