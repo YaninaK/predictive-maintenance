@@ -84,7 +84,7 @@ def get_M1_dataset(
     M1_dataset = []
     M1_labels = []
     for equipment in range(4, 10):
-        X = load_X(equipment, path).bfill().ffill()
+        X = load_X(equipment, path).resample(freq).median().bfill().ffill()
         old_cols = X.columns.tolist()
         new_cols = [f"col_{i}" for i in range(X.shape[1])]
         X.rename(
